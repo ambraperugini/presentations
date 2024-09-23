@@ -1,0 +1,34 @@
+\documentclass{article}
+\date{}
+\begin{document}
+
+
+
+\title{Critical effect size values and why to report them}
+\maketitle
+
+\begin{center}
+Ambra Perugini, Filippo Gambarota, Enrico Toffalini, Laura Sità, Daniël Lakens, Massimiliano Pastore, Livio Finos, Psicostat, Gianmarco Altoè\\
+\end{center}
+
+\begin{large} 
+  Abstract:\\
+\end{large} 
+
+
+
+Critical effect size values represent the Minimum Significant Effect detectable given a certain sample size. Estimating these values does not require specifying a plausible effect of interest, making their use largely versatile. Consider these two real-life examples:
+
+a. With a small sample size of N = 20, the critical values are r = $\pm$ 0.44. This value is likely larger than many true effects in psychology, cautioning against interpreting possible lack of statistical significance as evidence for a lack of an effect of interest.
+
+b. With a large sample size of N = 2000, the minimum detectable significant effects are r = $\pm$ 0.04. Effect sizes this small may even reflect mere procedural artifacts. Here, the critical values serve as a priori warning that the focus should be on the estimated effect size, while statistical significance alone is too loose for a meaningful interpretation.
+
+Reporting critical values may be especially useful when adopting NHST (Null Hypothesis Significance Testing) but the sample size has not been planned a priori or when the expected effect size is highly uncertain.
+
+To assist researchers in computing critical values, we have developed a tool that enables them to evaluate the minimum effect size of significance given their study design and sample. This tool is an R package that allows for reporting the critical values of model parameters and is implementable for group comparisons, correlations, linear regression, and meta-analysis.
+
+What we propose could benefit researchers during the planning phase of the study, as it will allow them to understand the limitations and strengths of their research design, but also as a retrospective tool to possibly reframe original interpretations.
+
+Finally, from a didactic perspective, understanding minimum significant effects can help students and trainees better grasp research topics such as scientific significance and effect sizes and how they are linked and yet can diverge at the same time.
+
+\end{document}

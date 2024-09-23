@@ -1,0 +1,34 @@
+\documentclass{article}
+\date{}
+
+\begin{document}
+
+
+\title{The importance of reporting and interpreting critical effect sizes}
+\maketitle
+
+\begin{center}
+Ambra Perugini, Filippo Gambarota, Enrico Toffalini, Daniël Lakens, Massimiliano Pastore, Livio Finos, Psicostat, Gianmarco Altoè\\
+\end{center}
+
+\begin{large} 
+  Keywords:
+\end{large} 
+critical effect sizes, sample size, R package, study design\\
+
+\begin{large} 
+  Abstract:\\
+\end{large} 
+
+
+
+Critical effect sizes are the minimum significant effect detectable. Given a sample size and alpha level, they represent the smallest effect that will yield a statistically significant result in a hypothesis test. The advantage of reporting them is particularly visible in the context of the NHST (Null Hypothesis Significance Testing), in cases where the sample size has not/could not be planned a priori or in case of high uncertainty of the expected effect size.
+
+To facilitate the computation of critical effect sizes, we created an R package that allows their calculation for model parameters. This tool can assist researchers to evaluate the critical effect size given their study design and sample size, and it's implementable for group comparisons, correlations, linear regression, and meta-analysis.
+
+Already from the planning phase of a study, researchers could benefit from using such tool, as it will allow them to better plan the study, pointing out limitations and strengths of their design. Moreover, it could be used as a a retrospective tool to possibly reframe original interpretations. And lastly, the concept of critical effect size could be beneficially used didactically to help students better grasp research topics such as statistical significance and effect sizes.
+
+
+
+
+\end{document}
