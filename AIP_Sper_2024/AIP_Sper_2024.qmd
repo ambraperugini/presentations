@@ -1,6 +1,6 @@
 ---
 institute: "\\ XXXVI Congresso Nazionale Associazione Italiana di Psicologia \\ Sezione Psicologia Sperimentale 23 - 25 Settembre 2024 | Cagliari"
-title: Is that a cluster? A practical guide on how to avoid Type I and Type II error
+title: Is that a cluster? A practical guide on how to avoid Type I error
 author: Ambra Perugini, Enrico Toffalini, Tommaso Feraco, Filippo Gambarota, Massimiliano Pastore, Gianmarco Altoè
 institution: Università degli Studi di Padova
 
