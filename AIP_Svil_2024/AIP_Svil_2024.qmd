@@ -1,0 +1,279 @@
+---
+institute: "\\ XXXVI Congresso Nazionale Associazione Italiana di Psicologia \\ Sezione Psicologia dello Sviluppo e dell’Educazione 19 - 21 Settembre 2024 | Cagliari"
+title: Critical effect size values and why to report them
+author: Ambra Perugini, Filippo Gambarota, Enrico Toffalini, Laura Sità, Daniël Lakens, Massimiliano Pastore, Livio Finos, Psicostat, Gianmarco Altoè
+
+format:
+  revealjs: 
+    self-contained: true
+    embed-resources: true
+    slide-number: true
+    execute: 
+      cache: false
+      
+---
+
+## Iniziamo con un esempio {.smaller}
+
+```{r}
+
+rm(list = ls())
+
+library(MASS)
+library(ggplot2)
+
+set.seed(20131129)
+n1 <- 18; n2 <- 1000
+
+R1 <- matrix(c(1,.4,.4,1),2,2)
+data1 <- data.frame(mvrnorm(n1,c(0,0),R1,empirical=TRUE))
+colnames(data1) <- c("y","x")
+data1$n <- n1
+
+R2 <- matrix(c(1,.08,.08,1),2,2)
+data2 <- data.frame(mvrnorm(n2,c(0,0),R2,empirical=TRUE))
+colnames(data2) <- c("y","x")
+data2$n <- n2
+
+myData <- rbind(data1,data2)
+myData$n <- factor(paste0("n = ",myData$n),
+                   levels=paste0("n = ",unique(myData$n)))
+
+addText <- data.frame(n=unique(myData$n),x=2,y=-3,
+                      label = c("r = .40, p = .10","r = .08, p = .01"))
+
+ggplot(myData,aes(x,y)) + facet_wrap(~n) + geom_point(size = 2) + 
+  geom_text(aes(x,y,label=label), data = addText, size = 8 )+
+  theme(text=element_text(size=35), axis.text = element_blank()) 
+```
+
+-   Non abbiamo trovato una correlazione positiva tra la variabile X e la variabile Y ($n = 18$ , $r = .40$, $p = .100$)
+
+-   Abbiamo trovato una correlazione positiva tra la variabile X e la variabile Y ($n = 1000$, $r = .08$, $p = .011$)
+
+
+```{css, echo=FALSE}
+
+.title {
+  font-size: 90px !important;
+  color: black !important;
+  margin-bottom: 30px !important;
+}
+
+.quarto-title-author-name {
+  font-size: 40px;
+  color: black !important;
+  margin-bottom: 30px !important;
+}
+
+.institute {
+  font-size: 30px;
+  color: black !important;
+}
+
+```
+
+```{r}
+#| include: false
+library(ggplot2)
+
+mtheme <- function(){
+  theme_minimal(25)
+}
+
+theme_set(mtheme())
+```
+
+
+
+
+## {.scrollable}
+
+Idealmente dovremmo pianificare l'$n$ per avere un power dell'80%. Spesso ci troviamo in scenari in cui non è stato possibile programmare il sample size, o per motivi di risorse limitate o perchè abbiamo avuto accesso ad una grande banca dati.
+
+-   Nel primo caso non è possibile raggiungere la potenza ottimale
+
+-   Nel secondo caso è evidente che con grandi campioni anche piccoli effetti diventano significativi
+
+## Cos'è il critical effect size value? {.smaller}
+
+E' il più piccolo effect size associato a $p < 0.05$ (quindi significativo), dato il sample size (e la direzione del test).
+
+![](img/Rplot03.jpg){fig-align="center"}
+
+<!-- <img src="img/Rplot03.pdf" style="width: 70px; align: "center";"/> -->
+
+<!-- ```{r} -->
+<!-- #| fig-width: 7 -->
+<!-- #| fig-height: 5.8 -->
+<!-- #| fig-align: center -->
+
+<!-- rm(list=ls()) -->
+
+<!-- library(ggplot2) -->
+<!-- library(psych) -->
+<!-- library(criticalvalue) -->
+
+<!-- fzH0 = seq(-2,2,.01) -->
+
+<!-- Ns = c(18,200,1e3) -->
+
+<!-- dd <- expand.grid( -->
+<!--   x = seq(-5, 5, 0.001), -->
+<!--   N = Ns -->
+<!-- ) -->
+
+<!-- dd$z <- with(dd, dnorm(x, 0, 1/sqrt(N - 3))) -->
+<!-- dd$r <- with(dd, fisherz2r(x)) -->
+<!-- dd$z[dd$N==18] = 2*dd$z[dd$N==18] -->
+<!-- dd$z[dd$N==200] = 1*dd$z[dd$N==200] -->
+
+<!-- dd$rc <- sapply(dd$N, function(x) critical_cor(n = x)$rc) -->
+<!-- dd$N <- factor(dd$N, levels = Ns, labels = sprintf("N = %s",Ns)) -->
+
+<!-- ggplot(dd, aes(x = r, y = z)) + -->
+<!--   #geom_line(lwd = 0.8) + -->
+<!--   geom_area(alpha = 0.8, -->
+<!--             fill = "#e1befe") + -->
+<!--   facet_wrap(~N, ncol = 1) + -->
+<!--   geom_vline(aes(xintercept = rc), -->
+<!--              lty = 3, -->
+<!--              lwd = 1.5, -->
+<!--              col = "dodgerblue") + -->
+<!--   geom_vline(aes(xintercept = -rc), -->
+<!--              lty = 3, -->
+<!--              lwd = 1.5, -->
+<!--              col = "dodgerblue") + -->
+<!--   theme_minimal(25) + -->
+<!--   xlab(latex2exp::TeX("Correlation ($\\rho$)")) + -->
+<!--   theme( -->
+<!--     axis.text.y = element_blank(), -->
+<!--     axis.text.x = element_text(size = 20) -->
+<!--   ) + -->
+<!--   ylab("Density") + -->
+<!--   scale_x_continuous(breaks = seq(-1,1, 0.1), limits = c(-0.5, 0.5)) -->
+
+
+<!-- ``` -->
+
+
+##  {.smaller}
+
+-   Nel primo esempio la correlazione non era significativa, ma il critical effect size value era $r = ±.468$. Ma... una correlazione di .30 non sarebbe rilevante?
+
+-   Nel secondo esempio il critical effect size value era $r = ± 0.062$, per cui effetti così piccoli da essere praticamente irrilevanti possono essere comunque significativi. 
+
+<!-- In questi casi la significatività, il filtro dell'NHST può essere comunque utile, come primo filtro ma il focus va sulla considerazione dell'effect size. -->
+
+```{r}
+#| fig-width: 7
+#| fig-height: 5.8
+#| fig-align: center
+
+library(criticalESvalue)
+n = seq (3, 1000, by = .3)
+
+dd <- data.frame(n, y = critical_cor(n = n)$rc)
+
+ggplot(dd, aes(x = n, y = y)) +
+  geom_line() +
+  ylim(c(0, 1)) +
+  ylab(latex2exp::TeX("Critical $\\rho$")) +
+  xlab("Sample size")
+```
+
+## Nella pratica, come ci aiutano i critical effect size values? {.smaller}
+
+**Prima di condurre uno studio:**
+
+-    pre-allertano sull'insufficienza di considerare $p < .05$ nell'interpretazione dei risultati
+
+**Quando lo studio è già stato svolto:**
+
+-   aiutano i revisori a meglio contestualizzare i risultati
+
+**In più..**
+
+-   dal punto di vista didattico aiutano a comprendere meglio la relazione tra significatività statistica, grandezza del campione e effect size
+
+## Come calcolare i critical effect size values
+
+\
+
+Il nostro pacchetto permette di calcolare i valori critici per correlazioni, confronti tra gruppi, regressione lineare e meta-analisi.
+
+```{r}
+#| echo: true
+#| collapse: false  
+library(criticalESvalue)
+n <- 30
+critical_t2sp(n = n, conf.level = 0.95, hypothesis = "two.sided")$dc
+```
+
+## Per saperne di più:
+
+\
+
+::: {style="text-align: center;"}
+Il nostro pacchetto, esempi su come usare le funzioni e il draft del paper nella nostra repository:
+
+\
+
+[https://github.com/psicostat/criticalESvalue](https://github.com/psicostat/criticalESvalue){preview-link="true" style="text-align: center"}
+:::
+
+## In conclusione
+
+-   Idealmente, sarebbe sempre meglio programmare il sample size tramite la formalizzazione di un effetto plausibile PRIMA di condurre lo studio.
+
+-   Ma quando pianificare uno studio $a priori$ non è possibile, i critical value riescono, senza specificare l'effetto plausibile, ad aiutare a comprendere i limiti del proprio disegno sperimentale
+
+-   Il nostro motto è TBT:
+
+::: {style="text-align: center;"}
+Thinking Before Testing!
+:::
+
+## Take-home message {.smaller}
+
+-   Ora vi starete chiedendo:
+
+::: {style="text-align: left; margin-left: 2em; margin-top: -.5em"}
+... Come definire teoreticamente l'effect size e come interpretarlo?
+
+... come calcolare i critical effect size values per modelli complessi?
+:::
+
+-   Il nostro suggerimento è la COLLABORAZIONE tra psicologi, psicometristi e statistici
+
+::: {style="text-align: center;"}
+Un piccolo esempio di collaborazione: PSICOSTAT
+
+[http://psicostat.dpss.psy.unipd.it](http://psicostat.dpss.psy.unipd.it){preview-link="true" style="text-align: center"}
+:::
+
+<img src="img/logo_psicostat.png" style="width: 70px; float: right;"/>
+
+## Grazie!
+
+\
+
+\
+
+Ambra Perugini
+
+ambra.perugini$@$phd.unipd.it
+
+[https://psicostat.dpss.psy.unipd.it/people.html](https://psicostat.dpss.psy.unipd.it/people.html){preview-link="true" style="text-align: center"}
+
+<!-- <img src="img/logo_psicostat.png" style="width: 20px; float: right;"/> -->
+
+<!-- affiliation: | -->
+
+<!--   \textsuperscript{1} Department of Developmental and Social Psychology, University of Padova, Italy \\ -->
+
+<!--   \textsuperscript{2} Department of General Psychology, University of Padova, Italy \\ -->
+
+<!--   \textsuperscript{3} Eindhoven University of Technology, Netherlands \\ -->
+
+<!--   \textsuperscript{4} Department of Statistics, University of Padova, Italy -->

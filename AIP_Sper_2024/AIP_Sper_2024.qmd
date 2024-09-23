@@ -1,0 +1,215 @@
+---
+institute: "\\ XXXVI Congresso Nazionale Associazione Italiana di Psicologia \\ Sezione Psicologia Sperimentale 23 - 25 Settembre 2024 | Cagliari"
+title: Is that a cluster? A practical guide on how to avoid Type I and Type II error
+author: Ambra Perugini, Enrico Toffalini, Tommaso Feraco, Filippo Gambarota, Massimiliano Pastore, Gianmarco Altoè
+institution: Università degli Studi di Padova
+
+format:
+  revealjs: 
+    self-contained: true
+    slide-number: true
+    footer: Ambra Perugin (ambra.perugini@phd.unipd.it)
+    execute: 
+      cache: false
+---
+
+## Cos'è la cluster analisi? {.smaller}
+
+La cluster analysis è un metodo (tipicamente) esplorativo che comprende una famiglia di metodi di unsupervised machine learning che raggruppano le osservazioni in gruppi più piccoli (clusters) che condividono proprietà simili.
+
+![](img/trash.png)
+
+
+## {}
+
+Oggi ci concentreremo su due metodi di clustering:
+
+:::: {.columns}
+
+::: {.column width="50%"}
+Gaussian mixture models:
+
+- Approccio model based
+
+- Assunto di normalità 
+
+- Stima parametri e covarianza tra clusters
+
+:::
+
+::: {.column width="50%"}
+K-means:
+
+ - Approccio non parametrico
+ 
+ - Non fa assunti sulle distribuzioni
+ 
+ - Basato sulla distanza eculidea tra osservazioni
+ 
+ - Necessaria ortogonalità tra variabili
+:::
+
+::::
+
+```{r}
+#| include: false
+library(ggplot2)
+
+mtheme <- function(){
+  theme_minimal(25)
+}
+
+theme_set(mtheme())
+```
+
+```{css, echo=FALSE}
+.title {
+  font-size: 70px !important;
+  color: black !important;
+  margin-bottom: 30px !important;
+}
+
+.quarto-title-author-name {
+  font-size: 40px;
+  color: black !important;
+  margin-bottom: 30px !important;
+}
+
+.institute {
+  font-size: 30px;
+  color: black !important;
+}
+
+```
+
+## Analisi esplorative o inferenza? {.smaller}
+
+In ambito di profilazione nelle aziende viene spesso utilizzato il clustering per suddividere la popolazione in più sottogruppi.
+
+![](img/cute.png)
+
+Se però intendiamo trarre conclusioni sulla popolazione target e fare quindi inferenza occorre essere più cauti.
+
+## Potenza
+
+La prima domanda che ci poniamo è sicuramente: Ho abbastanza potenza?
+
+Dalmaijer et al. (2023) suggerisce un power adeguato anche per campioni piccoli se si hanno 30 indicatori indipendenti e ortogonali che condividono informazioni che contribuiscono a definire l'appartenenza ai clusters (d = .68 tra cluster).
+
+## Normalità {.smaller}
+
+I dati psicologici sono raramente normali. La maggior parte di essi (questionari, test) sono il risultato di processi binomiali o multinomiali. Anche piccoli gradi di non-normalità dovrebbero essere sempre previsti.
+
+![](img/rt.png)
+
+## Indipendenza {.smaller}
+
+I dati psicologici sono raramente ortogonali. Molti mostrano piccole correlazioni e, per esempio, i dati cognitivi mostrano una sistematica "manifold positiva".
+
+![](img/cor_vars.png)
+
+
+## Ghost clusters {.smaller}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+
+Quando usiamo il k-means con variabili correlate troviamo cluster che non esistono e più partecipanti abbiamo, più è facile trovarli.
+
+:::
+
+::: {.column width="60%"}
+![](img/clusters.png){.absolute top=20 right=-100 width="680" height="700"}
+
+:::
+
+::::
+
+
+
+
+## {}
+
+![](img/gmm.png)
+
+Quando usiamo il GMM con variabili asimmetriche: ci risiamo
+
+## Cosa fare? {}
+
+::::{.columns}
+:::{.column width="50%"}
+
+\
+
+::: {style="font-size: .8em;"}
+Un primo step è controllare le distribuzioni dei nostri dati e l'ortogonalità delle variabili. Idealmente si dovrebbe poi procedere a valutare errore di primo e secondo tipo e power.
+:::
+
+:::
+
+:::{.column width="50%"}
+![](img/memee.jpg){.absolute top=0 right=50 width="350" height="700"}
+:::
+::::
+
+
+## E come?
+
+**Simulazione dei dati**. Per semplificare, abbiamo preparato una shiny app che lo fa per te.
+
+[https://psicostat.shinyapps.io/clustersimulation-demo/](https://psicostat.shinyapps.io/clustersimulation-demo/){preview-link="true" style="text-align: center"}
+
+:::: {.columns}
+::: {.column width="50%"}
+E un tutorial step by step per scenari più complessi (con r):
+::: 
+:::{.column width="50%"}
+![](img/qr.png){.absolute right=150 width="300" height="300"}
+:::
+::::
+
+
+
+## From data
+
+![](img/fromdata.png)
+
+## Power & Type I error
+
+![](img/pw.png)
+
+## Parameters specification
+
+![](img/parspec.png)
+
+## Grazie!
+
+\
+
+Ambra Perugini
+
+ambra.perugini$@$phd.unipd.it
+
+[https://psicostat.dpss.psy.unipd.it/people.html](https://psicostat.dpss.psy.unipd.it/people.html){preview-link="true" style="text-align: center"}
+
+\
+
+::: {style="font-size: .7em;"}
+Toffalini, E., Gambarota, F., Perugini, A., Girardi, P., Tobia, V., Altoè, G., ... & Feraco, T. Clusters that are not there: An R tutorial and a Shiny app to quantify a priori inferential risks when using clustering methods. International journal of psychology: Journal international de psychologie.
+:::
+
+<img src="img/logo_psicostat.png" style="width: 70px; float: right;"/>
+
+
+<!-- <img src="img/logo_psicostat.png" style="width: 20px; float: right;"/> -->
+
+<!-- affiliation: | -->
+
+<!--   \textsuperscript{1} Department of Developmental and Social Psychology, University of Padova, Italy \\ -->
+
+<!--   \textsuperscript{2} Department of General Psychology, University of Padova, Italy \\ -->
+
+<!--   \textsuperscript{3} Eindhoven University of Technology, Netherlands \\ -->
+
+<!--   \textsuperscript{4} Department of Statistics, University of Padova, Italy -->
