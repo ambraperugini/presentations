@@ -256,17 +256,16 @@ Here you can find our package, examples on how to use the functions and the draf
 
 \
 
-\
-
 Ambra Perugini
 
 ambra.perugini$@$phd.unipd.it
 
 [https://psicostat.dpss.psy.unipd.it/people.html](https://psicostat.dpss.psy.unipd.it/people.html){preview-link="true" style="text-align: center"}
 
+\
 
-<img src="img/logo_psicostat.png" style="width: 70px; float: right;"/>
 
+![](img/babyburn.WEBP){fig-align="center"}
 
 <!-- <img src="img/logo_psicostat.png" style="width: 20px; float: right;"/> -->
 
