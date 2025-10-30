@@ -1,0 +1,1086 @@
+---
+title: "Is my meta-analysis useless? Assessment of cumulative research through critical effect size values"
+format: 
+  revealjs:
+    logo: "img/logo_psicostat.png"
+    footer: "ambra.perugini@phd.unipd.it"
+    theme: simple
+    center: true
+    slide-number: true
+author: "Ambra Perugini, Daniël Lakens"
+bibliography: bibmeta.bib
+csl: apa.csl
+self-contained: true
+self-contained-math: true
+embed-resources: true
+cache: true
+include-in-header:
+  - text: |
+      <style>
+      #title-slide .title {
+        font-size: 2em;
+        color: #9B0014;
+      }
+      .slide-logo {
+        height: 60px !important;
+        max-height: none !important;
+        position: absolute !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        top: unset !important;
+        left: unset !important;
+      }
+      </style>
+      
+
+---
+
+```{r, echo=FALSE,warning=FALSE, message=FALSE}
+library(knitr)
+opts_chunk$set(echo=FALSE,prompt=TRUE,comment=NA,warning=FALSE,message=FALSE,results="as.is",cache=TRUE)
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+rm(list=ls()) # Clear the workspace
+
+## Loading packages for analyses
+library(readxl) # to read data
+library(metafor) # maximum likelihood meta-analysis
+library(bayesmeta) # bayesian meta-analysis
+library(criticalESvalue)
+
+## Import the data "dataset_meta.xlsx" in R
+d <- as.data.frame( read_excel("/Users/ambraperugini/Documents/Work/Conferences/Presentazioni/PMGS_2025/dataset_meta.xlsx") )
+d$TYPE_OF_STIMULI <- factor(d$TYPE_OF_STIMULI)
+
+# recode "type of stimuli" (see Pairwise comparison below)
+d$TYPE_OF_STIMULIc <- relevel(d$TYPE_OF_STIMULI,"VISUOSPATIAL") 
+
+## Building 3 datasets, one for each memory system
+data_long <- d[d$MEMORY_SYSTEM=="LONG TERM",]
+data_short<-d[d$MEMORY_SYSTEM=="SHORT TERM",]
+data_wm<-d[d$MEMORY_SYSTEM=="WM",]
+
+## PET-PEESE analysis for publication bias correction
+
+# Add standard error to each subset
+data_long$SE <- sqrt(data_long$Variance)
+data_short$SE <- sqrt(data_short$Variance)
+data_wm$SE <- sqrt(data_wm$Variance)
+
+```
+
+
+## What is a critical effect size? 
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+::: {style="font-size: 1em;"}
+The critical effect size value is the smallest effect that can reach statistical significance given the test, the sample size, and $\alpha$.
+
+
+**Example**: For a two-sided test of a correlation with **n = 20**, the critical **r = 0.44**. Effects between **−0.44** and **+0.44** won’t be significant.
+
+:::
+
+:::
+
+::: {.column width="50%"}
+![](img/pparty.png){.absolute right=10 bottom=80 width="480" height="350"}
+
+:::
+
+::::
+
+
+## {.smaller}
+
+The bigger the sample, the smaller the critical effect size.
+
+![](img/Rplot03.jpg){fig-align="center"}
+
+```{r PET}
+# --- LONG TERM MEMORY ---
+# PET (effect ~ SE)
+pet_long <- rma(yi = Hedges_g, sei = SE, mods = ~ SE, data = data_long, method = "REML")
+
+
+# PEESE (effect ~ SE^2)
+peese_long <- rma(yi = Hedges_g, sei = SE, mods = ~ I(SE^2), data = data_long, method = "REML")
+
+
+# --- SHORT TERM MEMORY ---
+pet_short <- rma(yi = Hedges_g, sei = SE, mods = ~ SE, data = data_short, method = "REML")
+
+
+peese_short <- rma(yi = Hedges_g, sei = SE, mods = ~ I(SE^2), data = data_short, method = "REML")
+
+
+# --- WORKING MEMORY ---
+pet_wm <- rma(yi = Hedges_g, sei = SE, mods = ~ SE, data = data_wm, method = "REML")
+
+
+peese_wm <- rma(yi = Hedges_g, sei = SE, mods = ~ I(SE^2), data = data_wm, method = "REML")
+
+
+```
+
+## Why are they useful? {.smaller}
+
+:::: {.columns}
+
+::: {.column width="70%"}
+
+**Before conducting the study:**
+
+-    They quickly tell you what to expect from your research design and test chosen. Instead of crossing fingers you know what will be significant and what will not.
+
+
+**In front of the dead corpse:**
+
+-   They help researchers and reviewers to better contextualize research findings without merely focusing on $p < 0.05$.
+
+**And more..**
+
+-   From a didactic point of view they help comprehend the relationship between statistical significance, sample size and effect size.
+
+:::
+
+::: {.column width="30%"}
+
+![](img/Agnes.jpeg){.absolute bottom=150 width="300" height="210"}
+
+:::
+::::
+
+
+## Implementation in R {.margin}
+
+::: {style="font-size: 0.7em;"}
+
+
+We developed an r package that implements the computation of critical effect size values for correlation, groups comparison, linear regression and meta-analysis.
+
+::: panel-tabset
+
+### From sample size (output)
+
+```{r}
+#| echo: false
+#| results: markup
+
+m1 <- 10
+m2 <- 15
+sd1 <- 5
+sd2 <- 4.25
+n1 <- 16
+n2 <- 18
+critical_t2s(m1 = m1, m2 = m2, sd1 = sd1, sd2 = sd2, n1 = n1, n2 = n2)
+```
+
+### From sample size (code)
+
+```{r}
+#| echo: true
+#| results: hide
+
+
+m1 <- 10
+m2 <- 15
+sd1 <- 5
+sd2 <- 4.25
+n1 <- 16
+n2 <- 18
+critical_t2s(m1 = m1, m2 = m2, sd1 = sd1, sd2 = sd2, n1 = n1, n2 = n2)
+```
+
+
+### From data (output)
+
+```{r}
+#| echo: false
+#| results: markup
+
+library(criticalESvalue)
+library(psych)
+library(psychTools)
+data("holzinger.swineford")
+Holz <- holzinger.swineford
+tt <- t.test(Holz$t01_visperc [ Holz$female == 1], Holz$t01_visperc [ Holz$female == 2])
+critical(tt)
+```
+
+### From data (code)
+
+```{r}
+#| echo: true
+#| results: hide
+
+library(criticalESvalue)
+library(psych)
+library(psychTools)
+data("holzinger.swineford")
+Holz <- holzinger.swineford
+tt <- t.test(Holz$t01_visperc [ Holz$female == 1], Holz$t01_visperc [ Holz$female == 2])
+critical(tt)
+```
+
+
+:::
+
+:::
+
+## The current project {.smaller}
+
+::: {style="font-size: 1.2em;"}
+
+**Aims**: 
+
+- Demonstrate the practical utility of critical effect size values. 
+
+- Investigate the cumulative progress of a research field.
+
+**How**:
+
+- By computing critical effect size values for individual studies within selected meta-analyses, to test whether those studies could have detected a significant effect equal to the meta-analytic estimate.
+
+- Assessing the cumulative nature of research my investigating if future studies plan sample sizes based on previous meta-analytic effects.
+
+:::
+
+## Meta-analyses requirements
+
+- Focus on main effects
+
+- Available table of coded studies
+
+- Published after the replicability crisis became a thing
+
+- Not too recent as well
+
+
+## Case studies
+
+- one with large sample size for individual studies
+
+- one with small sample size for individual studies 
+
+![](img/Big_small.jpeg)
+
+# Large Sample Size Case
+
+## @shannon2022problematic
+
+
+The meta-analysis investigates the association between social media use and depressive symptoms in young adolescents.
+
+We have calculated critical correlations for the individual studies and compared them to the meta-analytic effect.
+
+![](img/depre.jpeg){fig-align="center"} 
+
+## {}
+
+
+```{r}
+
+library(criticalESvalue)
+library(ggplot2)
+library(tidyverse)
+library(tibble)
+
+data_bm <- tibble(
+  Author_Year = c("Holmgren (2017)", "Wang (2018)", "Apaolaza (2019)", "Hou (2019)", 
+                  "Kircaburun (2019)", "Mitra (2019)", "Chen (2020)", "Kim (2020)",
+                  "Kircaburun, Demetrovics (2020)", "Kircaburun, Grifiths (2020)",
+                  "Stockdale (2020)", "Wong (2020)", "Yildiz (2020)",
+                  "Brailovskaia; Lithuanian sample (2021)", "Brailovskaia; German sample (2021)",
+                  "Giordano (2021)", "He (2021)", "Kilincel (2021)"),
+  n = c(442, 365, 346, 641, 470, 264, 437, 209, 344, 460, 385, 300, 451, 1640, 727, 428, 218, 1142),
+  Female_n_pct = c("228 (51.6)", "190 (52)", "179 (51.7)", "477 (74.4)", "280 (59.6)", "164 (62.2)",
+                   "308 (70.5)", "31 (14.8)", "282 (82)", "281 (61)", "204 (53)", "178 (59.3)",
+                   "214 (47.5)", "1123 (68.5)", "548 (75.4)", "218 (50.9)", "218 (100)", "722 (63.2)"),
+  Male_n_pct = c("214 (48.4)", "175 (48)", "167 (48.3)", "164 (25.6)", "190 (40.4)", "100 (37.8)",
+                 "129 (29.5)", "178 (85.2)", "62 (18)", "179 (39)", "181 (47)", "122 (40.7)",
+                 "237 (52.5)", "517 (31.5)", "179 (24.6)", "210 (49.1)", "0 (0)", "420 (36.8)"),
+  Age_Range_Mean = c("18-21 (18.86)", "14-18 (16.29)", "17-26 (18.73)", "17-25 (19.9)",
+                     "14-18 (16.29)", "18-25 (21.56)", "16-30 (24.21)", "15-18 (N/A)",
+                     "18-25 (20.87)", "18-26 (19.74)", "17-19 (18.01)", "18-24 (20.89)",
+                     "13-17 (15.5)", "18-29 (19.09)", "18-29 (21.47)", "13-19 (17.38)",
+                     "19-23 (19.6)", "12-18 (15.6)"),
+  Country = c("United States", "China", "Spain", "China", "Turkey", "India", "China", "China",
+              "Turkey", "Turkey", "United States", "Hong Kong", "Turkey",
+              "Lithuania", "Germany", "United States", "China", "Turkey"),
+  Depress_r = c(0.29, 0.18, NA, 0.22, 0.03, 0.39, NA, NA, 0.22, 0.34, 0.28, 0.336, NA, 0.305, 0.396, NA, NA, NA),
+  Anxiety_r = c(NA, NA, NA, 0.22, NA, NA, 0.29, 0.20, NA, NA, 0.24, 0.344, 0.58, 0.329, 0.461, NA, NA, 0.417),
+  Stress_r = c(NA, NA, 0.49, 0.11, NA, NA, NA, NA, NA, NA, NA, 0.384, NA, 0.246, 0.411, NA, 0.23, NA),
+  Combined_r = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 0.314, NA, NA)
+)
+
+data_d_r <- subset(data_bm, !is.na(Depress_r))
+
+meta_r_d <- 0.273
+
+data_d_r$Critical_r <- rep(NA,nrow(data_d_r))
+c <- match("n",names(data_d_r))
+Q <- 0
+
+for(i in 1:nrow(data_d_r)){
+  
+  n <- data_d_r[[i,c]]
+
+  c_r <- critical_cor(n = n, hypothesis = "two.sided", conf.level = 0.95)$rc
+
+  Q <- Q + 1
+  data_d_r[Q, "Critical_r"] <- c_r
+}
+
+P_d_r <- sum(data_d_r$Critical_r < meta_r_d)/length(data_d_r$Critical_r)*100
+
+
+
+```
+
+
+```{r}
+vline_data <- data.frame(
+  LineType = factor("Meta-analytic effect",
+                    levels = c("Depress_r", "Critical_r", "Meta-analytic effect")),
+  x = meta_r_d
+)
+
+data_d_r %>%
+  select(Author_Year, Depress_r, Critical_r) %>%
+  pivot_longer(cols = c(Depress_r, Critical_r), names_to = "Measure", values_to = "Value") %>%
+  mutate(Measure = factor(Measure, levels = c("Depress_r", "Critical_r", "Meta-analytic effect"))) %>%
+  ggplot(aes(x = Value, y = reorder(Author_Year, Value), color = Measure)) +
+  geom_point(size = 3) +
+  geom_vline(data = vline_data, aes(xintercept = x, color = LineType),
+             linetype = "dashed", linewidth = 1, show.legend = TRUE) +
+  scale_color_manual(
+    values = c(
+      "Depress_r" = "steelblue",
+      "Critical_r" = "firebrick",
+      "Meta-analytic effect" = "black"
+    )
+  ) +
+  labs(
+    title = "Effect Sizes vs Critical Values",
+    x = "Value",
+    y = "Study",
+    color = "Measure / Reference Line"
+  ) +
+  theme_minimal()
+
+```
+
+
+
+
+## {}
+
+- In this case, all individual studies had critical effect size values **smaller** than the **meta-analytic effect** (`r P_d_r`\%).
+
+- If the meta-analytic effect truly exists, each study can reach significance for it.
+
+- In areas with large and easy to collect samples, null results are less likely to stem from insufficient power.
+
+
+# Small Sample Size Case
+
+
+<!-- ## @harkin2016does -->
+
+```{r}
+library(dplyr)
+library(tibble)
+
+# Table 2 from Harkin et al. (2016) as a tribble
+data_harkin <- tribble(
+  ~Author_Year, ~PM_method, ~Focal, ~NE, ~NC, ~d_PM, ~d_GA,
+  "Abrahamset al. (2010)", "Diary", "Prophylaxisuse", 125, 128, 0.27, 0.15,
+  "Abrairaet al. (1995)", "SMBG", "BG", 75, 78, 2.41, 0.47,
+  "Acharyaet al. (2011)", "PDA", "Weight", 129, 62, 0.66, 0.12,
+  "Akerset al. (2012)", "Trackingsheets", "Weight,diet", 18, 21, -0.13, -0.02,
+  "Allenet al. (2013) Comp.1f", "Phone", "Weight", 11, 4, 2.76, 0.45,
+  "Allenet al. (2013) Comp.2g", "Phone", "Weight", 10, 4, 2.71, 0.42,
+  "Allenet al. (2013) Comp.3h", "Phone", "Weight", 10, 4, 2.02, -0.10,
+  "Amsberget al. (2009)", "Bloodsugar", "BG", 36, 38, 0.70, 0.47,
+  "Anet al. (2006)", "Website", "Smoking", 257, 260, 10.72, 0.45,
+  "Andersonet al. (2011)", "Diary", "Weight", 18, 13, 4.31, 3.21,
+  "Andrewset al. (2011)", "Pedometer", "BG", 240, 246, 4.11, -0.02,
+  "Antypas&Wangberg(2014)", "Website", "PA", 27, 37, 0.17, 0.84,
+  "Arbour&MartinGinis(2008)", "Logbook", "PA", 25, 17, 0.10, 0.50,
+  "Aronson(2006)", "Diary", "Medicationadherence", 19, 19, -0.61, 0.11,
+  "Atienzaet al. (2008)", "PDA", "Diet", 16, 11, 2.95, 0.51,
+  "Beasleyet al. (2008)", "Diary", "Weight", 71, 78, 0.00, 0.25,
+  "Bellet al. (2012)", "Log/diary", "BG", 31, 33, -0.36, 0.32,
+  "Berget al. (1997)", "Diary", "Asthma", 31, 24, 4.32, 0.12,
+  "Blascoet al. (2012)", "Internet", "CAD", 87, 83, 4.07, 0.09,
+  "Boutelleet al. (1999)", "Diary", "Weight", 26, 31, 0.47, 1.64,
+  "Brouweret al. (2011)", "Website", "Diet", 56, 59, 0.09, 0.42,
+  "Burkeet al. (2011)", "Diary", "Weight", 25, 25, 0.15, 0.82,
+  "Cardozo&Huston(2014)", "Website", "Weight", 25, 16, 0.21, 0.44,
+  "Carpenteret al. (2012)", "Diary", "Weight", 38, 39, -0.03, 0.47,
+  "Chapmanet al. (2011)", "Pedometer", "PA", 25, 20, 2.26, 0.27,
+  "Chiauzziet al. (2008)", "Internet", "Drinking", 231, 88, 0.16, 0.20,
+  "Chowet al. (2014)", "Website", "BP", 93, 105, 0.23, 0.41,
+  "Clarket al. (2004)", "SMBG", "BG", 34, 35, 5.31, 0.36,
+  "Clarke&Meer(2011)", "Scale", "Weight", 86, 78, 2.82, 0.20,
+  "Clineet al. (2009)", "Pedometer", "PA", 23, 25, 0.04, 0.07,
+  "Colkesenet al. (2013)", "Website", "Riskfactors", 198, 226, 0.17, 0.09,
+  "Coons(2012)", "Pedometer", "PA", 30, 28, 2.27, 0.25,
+  "Corderet al. (2015)", "Pedometer", "PA", 238, 337, 0.15, -0.03,
+  "Creasyet al. (2014)", "Phone", "Weight", 26, 25, 2.21, 0.40,
+  "Croffootet al. (2009)", "Glucosemeter", "BG", 36, 38, 0.70, 0.43,
+  "DeGreefet al. (2011)", "Pedometer", "PA", 75, 65, 0.58, 0.15,
+  "Delamateret al. (2001)", "SMBG", "BG", 49, 45, 4.15, 0.06,
+  "Delamateret al. (2012)", "SMBG", "BG", 52, 55, 3.37, 0.06,
+  "Desrocheset al. (2011)", "Glucosemeter", "BG", 23, 23, 0.22, -0.05,
+  "DiLorenzoet al. (2014)", "Website", "Diet", 32, 34, 0.63, 0.58,
+  "Duncan&Dick(2014) Comp.1i", "Website", "Smoking", 81, 86, 0.05, 0.11,
+  "Duncan&Dick(2014) Comp.2j", "Website", "Smoking", 81, 86, 0.05, 0.25,
+  "Duncan&Dick(2014) Comp.3k", "Website", "Smoking", 81, 86, 0.00, 0.28,
+  "Duncan&Dick(2014) Comp.4l", "Website", "Smoking", 83, 86, 0.06, 0.10,
+  "Elderet al. (2008)", "Diary", "Weight", 18, 16, 0.15, 0.58,
+  "El-Gayar(2013)", "Glucosemeter", "BG", 30, 30, 0.23, 0.14,
+  "Engberset al. (2005)", "Website", "PA", 149, 265, 0.02, -0.23,
+  "Evans-Hudnallet al. (2014)", "Website", "Weight", 26, 38, 0.37, 0.50,
+  "Fitzsimmonset al. (2010)", "Website", "PA", 55, 54, 0.42, 0.53,
+  "Fjeldsoeet al. (2010)", "Phone", "PA", 43, 46, 0.22, 0.38,
+  "Fjeldsoeet al. (2015)", "Phone", "PA", 132, 132, 0.12, 0.25,
+  "Fleuryet al. (2013)", "Diary", "PA", 43, 42, 0.00, 0.57,
+  "Fong&Loan(2011)", "Internet", "Weight", 23, 23, 0.10, 0.45,
+  "Fosteret al. (2009)", "Diary", "Weight", 16, 16, 0.04, 0.38,
+  "Frenshamet al. (2014)", "Pedometer", "PA", 40, 40, 0.38, 0.33,
+  "Fry&Neff(2009)", "Website", "Diet", 53, 51, 0.02, 0.10,
+  "Fujimotoet al. (2010)", "Website", "PA", 89, 85, 0.13, 0.22,
+  "Gaetke&Standaert(2013)", "Phone", "BG", 20, 14, 1.15, 0.53,
+  "Gabrieletal. (2011)", "Scale", "Weight", 20, 18, 3.48, 0.46,
+  "Ganset al. (2007)", "Pedometer", "PA", 20, 14, 0.87, 0.36,
+  "Geraghtyet al. (2014)", "Internet", "Symptoms", 160, 160, 0.15, -0.11,
+  "Glasgowet al. (2003)", "Internet", "BG", 74, 80, 4.92, 0.33,
+  "Glazebrooket al. (2006)", "Website", "Diet", 24, 30, 0.04, -0.23,
+  "Gokee-Laroseet al. (2009)", "Diary", "Weight", 91, 59, 0.22, 0.54,
+  "Goldstrawet al. (2014)", "Website", "Calories", 16, 14, 0.12, 0.28,
+  "Golenkoet al. (2014)", "Website", "Diet", 36, 35, 0.00, 0.12,
+  "Gonzalez(2011) Study1", "Diary", "PA", 15, 14, 0.26, 0.13,
+  "Gonzalez(2011) Study2", "Diary", "PA", 15, 14, 0.50, -0.08,
+  "Gonzalez&Llanes(2010)", "Diary", "PA", 9, 10, 0.10, -0.18,
+  "Haire-Joshuet al. (2001)", "Diary", "BG", 90, 88, 1.61, 0.14,
+  "Hanlenet al. (2010)", "Diary", "Weight", 18, 18, 0.00, 0.33,
+  "Harris&Brinkworth(2014)", "Scale", "Weight", 29, 31, 1.08, 0.33,
+  "Hassonet al. (2012)", "Website", "PA", 36, 35, 0.03, 0.27,
+  "Hausenblaset al. (2005)", "Logbook", "PA", 68, 69, 0.07, 0.28,
+  "Hebertet al. (2014)", "Phone", "Weight", 44, 59, 0.35, 0.44,
+  "Helmreichet al. (2014)", "Pedometer", "PA", 60, 60, 2.33, 0.16,
+  "Higginset al. (2010)", "Glucosemeter", "BG", 48, 42, 0.64, -0.16,
+  "Himmelsteinet al. (2008)", "Diary", "Weight", 33, 32, 0.28, 0.55,
+  "Hurlinget al. (2007)", "Phone", "PA", 50, 37, 0.33, 0.61,
+  "Jenningset al. (2014)", "Pedometer", "PA", 149, 142, 0.05, 0.13,
+  "Johnet al. (2011)", "Internet", "BP", 721, 728, 0.02, 0.08,
+  "Joneset al. (2003)", "Scale", "Weight", 67, 68, 0.41, 0.45,
+  "Joneset al. (2009)", "Internet", "BG", 18, 20, 1.10, 0.24,
+  "Kapooret al. (2015)", "Phone", "BP", 25, 25, 0.20, 0.49,
+  "Katulaet al. (2010)", "Glucosemeter", "BG", 75, 75, 0.46, -0.16,
+  "Kelders(2012)", "Website", "PA", 124, 146, 0.24, 0.88,
+  "Kirk&Rhodes(2011)", "Website", "Diet", 14, 14, 0.04, 0.43,
+  "Koket al. (2014)", "Phone", "PA", 56, 28, 0.05, 0.53,
+  "Kostigen(2014)", "Scale", "Weight", 26, 27, 0.20, 0.31,
+  "Krukowskiet al. (2013)", "Scale", "Weight", 28, 23, 0.59, 0.27,
+  "Leaheyet al. (2013)", "Phone", "Weight", 25, 27, 0.11, 0.38,
+  "Leaheyet al. (2014)", "Website", "Weight", 18, 18, 0.11, 0.43,
+  "Leikefet al. (2013)", "Pedometer", "PA", 52, 53, 0.09, 0.29,
+  "Lioret al. (2011)", "Internet", "BG", 39, 38, 0.18, 0.35,
+  "Littleet al. (2013)", "Internet", "Drinking", 741, 761, 0.06, 0.10,
+  "Lombardiet al. (2014)", "Website", "Weight", 32, 40, 0.04, 0.29,
+  "Loriget al. (2008)", "Internet", "Symptoms", 423, 332, 0.24, 0.03,
+  "Manberet al. (2011)", "Diary", "Sleep", 32, 32, 0.13, 0.38,
+  "Martin&Fuchs(2014)", "Pedometer", "PA", 46, 48, 0.18, 0.06,
+  "McCarneyet al. (2007)", "Diary", "Weight", 123, 123, 0.12, -0.08,
+  "McDonough&Patil(2015)", "Logbook", "PA", 94, 92, 0.20, 0.28,
+  "Morriset al. (2014)", "Phone", "PA", 45, 44, 0.21, 0.27,
+  "Nilsen(2015)", "Glucosemeter", "BG", 115, 110, 0.36, -0.30,
+  "Noar(2008)", "Internet", "Drinking", 75, 73, 0.08, 0.20,
+  "Norman(2010)", "Website", "Diet", 35, 37, 0.17, -0.06,
+  "Obermayer(2004)", "Phone", "Smoking", 26, 25, 0.31, 0.39,
+  "Oenema(2008)", "Website", "Diet", 142, 136, 0.25, 0.07,
+  "Oenema(2009)", "Website", "Diet", 56, 41, 0.41, -0.11,
+  "Pateyet al. (2009)", "Diary", "Weight", 17, 17, 0.17, 0.21,
+  "Peels(2014)", "Website", "PA", 249, 257, 0.22, 0.05,
+  "Perri&Fuller(1995)", "Scale", "Weight", 24, 18, 0.17, 0.29,
+  "Pettiferet al. (2014)", "Website", "PA", 37, 33, 0.05, 0.01,
+  "Pocai(2011)", "Logbook", "BG", 56, 55, 0.54, 0.28,
+  "Polzienet al. (2007)", "Diary", "Weight", 10, 11, 0.09, 0.86,
+  "Postel(2010)", "Internet", "Drinking", 538, 278, 0.31, 0.38,
+  "Priebe(2012)", "Diary", "Riskfactors", 23, 18, 0.20, 0.56,
+  "Purcell(2014)", "Phone", "Weight", 15, 19, 0.28, 0.58,
+  "Raitakari(2012)", "Website", "PA", 272, 256, 0.16, 0.07,
+  "Rauhet al. (2013)", "Pedometer", "PA", 107, 102, 0.15, 0.31,
+  "Readet al. (2010)", "Diary", "Weight", 25, 23, 0.31, 0.04,
+  "Reid(2012)", "Pedometer", "PA", 48, 47, 0.03, 0.17,
+  "Reid(2014)", "Pedometer", "PA", 47, 49, 0.14, 0.29,
+  "Renziet al. (2014)", "Phone", "PA", 15, 15, 0.00, 0.41,
+  "Renzi&Petosa(2015)", "Phone", "PA", 29, 32, 0.12, 0.69,
+  "Rhodes(2003)", "Scale", "Weight", 33, 29, 0.03, 0.29,
+  "Richard(2012)", "Phone", "PA", 33, 33, 0.14, 0.24,
+  "Riley(2014)", "Phone", "PA", 46, 45, 0.23, 0.44,
+  "Riper(2008)", "Internet", "Drinking", 742, 476, 0.13, 0.09,
+  "Rodriguez(2012)", "Website", "PA", 80, 67, 0.11, 0.28,
+  "Rossen(2013)", "Glucosemeter", "BG", 68, 70, 0.34, -0.12,
+  "Rubak(2009)", "Diary", "BG", 75, 75, 0.48, 0.07,
+  "Schneider(2012)", "Pedometer", "PA", 99, 98, 0.06, 0.29,
+  "Schubart(2011)", "Glucosemeter", "BG", 50, 51, 0.01, -0.08,
+  "Searle(2014)", "Pedometer", "PA", 40, 37, 0.02, 0.34,
+  "Shiffman(2007)", "Diary", "Smoking", 298, 297, 0.19, 0.01,
+  "Shuger(2011)", "Pedometer", "PA", 25, 23, 0.13, 0.45,
+  "Shugar(2014)", "Website", "PA", 125, 126, 0.08, 0.07,
+  "Sleddens(2009)", "Website", "Diet", 48, 55, 0.08, 0.18,
+  "Sneezum(2014)", "Website", "PA", 47, 46, 0.13, 0.62,
+  "Spring(2013)", "Phone", "Diet", 15, 16, 0.25, 0.74,
+  "St-Gelais(2014)", "Phone", "PA", 20, 19, 0.00, 0.21,
+  "Stevinson(2009)", "Website", "PA", 75, 67, 0.18, 0.30,
+  "Stone(2003)", "Diary", "Diet", 21, 21, 1.19, 0.45,
+  "Straker(2012)", "Pedometer", "PA", 72, 73, 0.15, 0.01,
+  "Sun(2013)", "Website", "Diet", 20, 18, 0.28, 0.30,
+  "Swartz(2003)", "Pedometer", "PA", 37, 34, 0.12, 0.07,
+  "Swartz(2006)", "Pedometer", "PA", 29, 32, 0.06, 0.23,
+  "Tate(2006) Comp.1m", "Website", "Weight", 48, 53, 0.32, 0.99,
+  "Tate(2006) Comp.2n", "Website", "Weight", 48, 53, 0.30, 0.36,
+  "Tate(2007)", "Website", "Weight", 32, 31, 0.23, 0.43,
+  "Tate(2001)", "Website", "Weight", 33, 32, 1.09, 0.65,
+  "Thorndikeet al. (2012)", "Website", "Weight", 145, 130, 3.36, 0.16,
+  "Turner-McGrievy&Tate(2011)", "Phone", "Weight", 42, 45, 0.22, 0.05,
+  "VanderMeeret al. (2009)", "Website", "Asthma", 91, 92, 2.46, 3.80,
+  "Wanget al. (2012)", "PDA", "Weight", 59, 60, 0.29, 0.46,
+  "Webberet al. (2008)", "Diary", "Weight", 33, 33, 0.03, 0.31,
+  "Winget al. (2006) Comp.1y", "Phone", "Weight", 103, 49, 3.82, 0.37,
+  "Winget al. (2006) Comp.2z", "Website", "Weight", 100, 49, 3.75, 0.04,
+  "Winget al. (2010)", "Website", "Weight", 74, 76, 0.16, 0.61,
+  "Winget al. (1996) Study1", "Diary", "Weight", 23, 27, 3.51, 0.44,
+  "Young,Medic,&Starkes(2009)", "Swimlog", "PA", 15, 11, -0.71, 1.00
+)
+
+data_harkin <- as.data.frame(data_harkin)
+
+meta_pm <- 1.98
+meta_pm_agg <- 1.16
+
+meta_ga <- 0.40
+meta_ga_agg <- 0.19
+
+data_harkin$Critical_2t_pm <- rep(NA,nrow(data_harkin))
+data_harkin$Critical_2t_ga <- rep(NA,nrow(data_harkin))
+c1 <- match("NE",names(data_harkin))
+c2 <- match("NC",names(data_harkin))
+Q <- 0
+
+for(i in 1:nrow(data_harkin)){
+  
+  n1 <- data_harkin[i,c1]
+  n2 <- data_harkin[i,c2]
+
+  dc_pm <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "two.sided", conf.level = 0.95)$dc
+
+  dc_ga <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "two.sided", conf.level = 0.95)$dc
+  
+  Q <- Q + 1
+  data_harkin[Q, "Critical_2t_pm"] <- dc_pm
+  data_harkin[Q, "Critical_2t_ga"] <- dc_ga
+}
+
+P_l_harkin_pm <- sum(data_harkin$Critical_2t_pm < meta_pm)/length(data_harkin$Critical_2t_pm)*100
+PB_l_harkin_pm <- sum(data_harkin$Critical_2t_pm < meta_pm_agg)/length(data_harkin$Critical_2t_pm)*100
+
+P_l_harkin_ga <- sum(data_harkin$Critical_2t_ga < meta_ga)/length(data_harkin$Critical_2t_ga)*100
+PB_l_harkin_ga <- sum(data_harkin$Critical_2t_ga < meta_ga_agg)/length(data_harkin$Critical_2t_ga)*100
+
+
+```
+
+
+<!-- ## @miller2015meta -->
+
+```{r}
+
+
+data_miller <- tribble(
+  ~Author_Year,                       ~r,      ~CI_lower, ~CI_upper, ~Z,     ~p,     ~N,  ~code,
+  "Boyle (2000)",                     0.680,   0.234,     0.890,     2.750,  0.006,  14,  "11118321111",
+  "Cantor et al. (1980)",             0.048,  -0.636,     0.690,     0.118,  0.906,   9,  "12118122124",
+  "Carlin & Hewitt (1990)",          -0.220,  -0.801,     0.574,    -0.500,  0.617,   8,  "11123221211",
+  "Carroll et al. (1988) - 1",        0.098,  -0.260,     0.432,     0.529,  0.596,  32,  "12214221312",
+  "Carroll et al. (1988) - 2",        0.000,  -0.443,     0.443,     0.000,  1.000,  20,  "12214221312",
+  "Cooper & Werner (1990)",           0.430,  -0.002,     0.727,     1.951,  0.051,  21,  "21117223112",
+  "Desmarais et al. (2010)",         -0.069,  -0.468,     0.353,    -0.309,  0.757,  23,  "21127233512",
+  "Douglas & Ogloff (2003)",          0.210,  -0.941,     0.974,     0.213,  0.831,   4,  "21127123122",
+  "Ekman & O'Sullivan (1991)",        0.020,  -0.221,     0.259,     0.160,  0.873,  67,  "12213122311",
+  "Elkovitch et al. (2008)",          0.220,  -0.940,     0.975,     0.224,  0.823,   4,  "21127223212",
+  "Fero (1975)",                      0.188,  -0.596,     0.788,     0.425,  0.671,   8,  "21234321112",
+  "Greenfield & Haaga (2011) - 1",    0.120,  -0.951,     0.969,     0.121,  0.904,   4,  "22225222113",
+  "Greenfield & Haaga (2011) - 2",   -0.070,  -0.966,     0.955,    -0.070,  0.944,   4,  "22225222113",
+  "Haderlie (2011)",                 -0.420,  -0.830,     0.285,    -1.184,  0.236,  10,  "22215321513",
+  "Hopwood & Richard (2005)",        -0.300,  -0.627,     0.118,    -1.418,  0.156,  24,  "11226221321",
+  "Kalichman & Craig (1991)",         0.440,   0.348,     0.523,     8.500,  0.000, 327,  "12211121121",
+  "Kalichman et al. (1989)",          0.381,   0.276,     0.477,     6.642,  0.000, 277,  "12211121121",
+  "Kendell (1973)",                   0.100,  -0.347,     0.510,     0.426,  0.670,  21,  "12218212321",
+  "Lefkowitz (1973)",                 0.208,  -0.129,     0.502,     1.213,  0.225,  36,  "11238322423",
+  "Leli & Filskov (1981)",            0.135,  -0.387,     0.591,     0.490,  0.624,  16,  "11232222211",
+  "Leli & Filskov (1984)",            0.280,  -0.424,     0.773,     0.761,  0.447,  10,  "11232222211",
+  "Levenberg (1975)",                 0.086,  -0.428,     0.558,     0.311,  0.756,  16,  "12218222211",
+  "McNeil et al. (1998)",             0.210,  -0.013,     0.413,     1.846,  0.065,  78,  "22117133412",
+  "Moxley (1973)",                    0.235,  -0.392,     0.713,     0.718,  0.472,  12,  "21215222422",
+  "Nadler et al. (1994)",             0.000,  -0.224,     0.224,     0.000,  1.000,  77,  "11212111223",
+  "Pedley (1994)",                    0.530,   0.295,     0.704,     4.046,  0.000,  50,  "32216322311",
+  "Rabinowitz et al. (1999)",         0.030,  -0.530,     0.572,     0.095,  0.924,  13,  "22117223512",
+  "Rodriguez (2002)",                 0.090,  -0.213,     0.377,     0.578,  0.563,  44,  "12211221121",
+  "Ruscio & Stern (2005)",            0.125,  -0.159,     0.390,     0.861,  0.389,  50,  "12216221125",
+  "Ryan et al. (2003)",              -0.100,  -0.530,     0.371,    -0.401,  0.688,  19,  "11216212223",
+  "Stemple (1985)",                   0.004,  -0.308,     0.315,     0.023,  0.982,  40,  "11218321213",
+  "Twaites (1974)",                  -0.020,  -0.496,     0.465,    -0.075,  0.940,  17,  "21216323212",
+  "Walker & Lewine (1990)",           0.000,  -0.454,     0.454,     0.000,  1.000,  19,  "22218223311",
+  "Walters et al. (1988)",            0.000,  -0.254,     0.254,     0.000,  1.000,  60,  "12213121221",
+  "Wittemann et al. (2007)",          0.092,  -0.222,     0.389,     0.569,  0.570,  41,  "12218232121",
+  "Young (1970)",                     0.240,  -0.459,     0.755,     0.648,  0.517,  10,  "11238321212"
+)
+
+data_miller <- as.data.frame(data_miller)
+
+meta_cor <- 0.150
+
+data_miller$Critical_r <- rep(NA,nrow(data_miller))
+c1 <- match("N",names(data_miller))
+Q <- 0
+
+for(i in 1:nrow(data_miller)){
+  
+  n1 <- data_miller[i,c1]
+
+  cor_c <- critical_cor(n = n1, hypothesis = "two.sided", conf.level = 0.95)$rc
+
+  Q <- Q + 1
+  data_miller[Q, "Critical_r"] <- cor_c
+}
+
+P_l_miller <- sum(data_miller$Critical_r < meta_cor)/length(data_miller$Critical_r)*100
+
+```
+
+
+<!-- ## @adesope2010systematic -->
+
+```{r}
+
+data_adesope <- tribble(
+  ~Author_Year, ~Grade_Range, ~N, ~Languages, ~Cognitive_Benefits, ~g,
+  "Abu-Rabia and Siegel (2002)", "4-7", 63, "Arabic-English", "Working memory for normally developed", 0.2,
+  "Abu-Rabia and Siegel (2002)", "4-7", 31, "Arabic-English", "Working memory for reading disabled", -0.23,
+  "Bialystok (1997)", "PreK", 81, "French-English", "ASR: Symbolic representation of print", 1.04,
+  "Bialystok (1997)", "PreK", 87, "Chinese-English", "ASR: Symbolic representation of print", 1.32,
+  "Bialystok (1997)", "PreK", 81, "French-English", "ASR: Symbolic representation", 0.07,
+  "Bialystok (1997)", "PreK", 87, "Chinese-English", "ASR: Symbolic representation", -0.26,
+  "Bialystok (2006)", "PSec", 97, "Mixed-English", "Working memory using Simon tasks", 0.51,
+  "Bialystok (1999)", "PreK", 30, "Chinese-English", "Attentional Control", 0.82,
+  "Bialystok (1999)", "PreK", 30, "Chinese-English", "Attentional Control", 0.69,
+  "Bialystok, Craik, et al. (2005)", "PSec", 29, "French-English", "Attentional Control", 0.63,
+  "Bialystok, Craik, and Ruocco (2006)", "f, Exp. 1 PSec", 48, "Mixed-English", "Working memoryg", 0.48,
+  "Bialystok, Craik, and Ruocco (2006)", ", Exp. 2 PSec", 48, "Mixed-English", "Working memoryh", -0.3,
+  "Bialystok et al. (2004), Exp. 1", "PSec", 20, "Tamil-English", "Attentional control: MRT for younger adults", 2.25,
+  "Bialystok et al. (2004), Exp. 1", "PSec", 20, "Tamil-English", "Attentional control: MRT for older adults", 1.03,
+  "Bialystok et al. (2004), Exp. 2", "PSec", 64, "Tamil-English", "Attentional control: MRT for younger", 2.63,
+  "Bialystok et al. (2004), Exp. 2", "PSec", 30, "Mixed-English", "Attentional control: MRT for older adults", 1.35,
+  "Bialystok et al. (2004), Exp. 2", "PSec", 20, "French-English", "Attentional control: MRT for older adults", 2.45,
+  "Bialystok, Luk, et al. (2005b)", "1", 132, "Mixed-English", "Metalinguistic awarenessj", 0.95,
+  "Bialystok and Majumder (1998)", "K-3", 71, "Mixed-English", "Problem solvingk", 0.35,
+  "Bialystok et al. (2003), Exp. 1", "K-3", 72, "French-English", "Metalinguistic awareness", -0.02,
+  "Bialystok et al. (2003), Exp. 2", "K-3", 75, "French-English", "Metalinguistic awareness", -0.45,
+  "Bialystok et al. (2003), Exp. 3", "K-3", 64, "Chinese-English", "Metalinguistic awarenessl", -0.92,
+  "Bialystok et al. (2003), Exp. 3", "K-3", 58, "Spanish-English", "Metalinguistic awareness", 0.51,
+  "Bialystok and Martin (2004), Exp. 1", "PreK", 67, "Cantonese-English", "Attentional control using the DCCS taskm", 0.35,
+  "Bialystok and Martin (2004), Exp. 2", "PreK", 30, "French-English", "Attentional control using manual DCCS task", 0.83,
+  "Bialystok and Martin (2004), Exp. 3", "PreK", 53, "Chinese-English", "Attentional control: color shape and color object", 0.63,
+  "Bialystok and Martin (2004), Exp. 3", "PreK", 53, "Chinese-English", "Attentional control: functional location and place", 0.42,
+  "Bialystok, McBride-Chang, et al. (2005), Exp. 1", "K-1", 67, "Chinese-English", "Metalinguistic awareness", -0.04,
+  "Bialystok, McBride-Chang, et al. (2005), Exp. 2", "K-1", 67, "Chinese-English", "Metalinguistic awareness", -0.3,
+  "Bialystok and Senman (2004), Exp. 2", "PreK", 95, "Mixed-English", "Attentional controln", 1.59,
+  "Bialystok and Shapero (2005), Exp. 1", "K-1", 48, "Mixed-English", "ASR: Reversibility of ambiguous figureso", 1.14,
+  "Bialystok and Shapero (2005), Exp. 2", "K", 53, "Mixed-English", "Attentional control using different tasksp", 0.18,
+  "Bruck and Genesee (1995)", "K", 137, "French-English", "Metalinguistic awareness", -0.44,
+  "Campbell and Sais (1995)", "PreK", 30, "Italian-English", "Metalinguistic awarenessq", 0.64,
+  "Chen et al. (2004), Exp. 1", "2", 125, "Canton-Mandarin", "Metalinguistic awareness: tone, onset and rime tasks", 0.2,
+  "Chen et al. (2004), Exp. 1", "4", 150, "Canton-Mandarin", "Metalinguistic awareness: tone, onset and rime tasks", -0.3,
+  "Chen et al. (2004), Exp. 2", "1", 94, "Canton-Mandarin", "Metalinguistic awareness tasksr", 0.36,
+  "Chen et al. (2004), Exp. 2", "2", 89, "Canton-Mandarin", "Metalinguistic awareness: tone, onset and rime tasks", 0.49,
+  "Chen et al. (2004), Exp. 2", "4", 106, "Canton-Mandarin", "Metalinguistic awareness: tone, onset and rime tasks", 0.06,
+  "Clarkson and Galbraith (1992)", "6", 96, "Pidgin-English", "Problem solving with mathematical tests", 0.4,
+  "Cromdal (1999)", "K", 54, "Swedish-English", "Metalinguistic awareness taskss", 0.71,
+  "Davidson and Tell (2005), Exp. 1", "PreK", 40, "Urdu-English", "ASR: Mutual exclusivity in naming whole objectst", 0.18,
+  "Davidson and Tell (2005), Exp. 1", "K-1", 40, "Urdu-English", "Mutual exclusivity in naming whole objects", 1.22,
+  "Davidson and Tell (2005), Exp. 2", "K-1", 20, "Urdu-English", "Mutual exclusivity in naming whole objects", 0.34,
+  "Demie and Strand (2006)", "10", 1026, "Mixed-English", "Problem solving with a standardized test", 0.23,
+  "Demont (2001)", "1", 43, "German-French", "Metalinguistic awareness: several tasksu", 0.56,
+  "Eviatar and Ibrahim (2000)", "K-1", 76, "Russian-Hebrew", "Metalinguistic awareness using several tasksv", 0.96,
+  "Galambos and Goldin-Meadow (1990)", "PreK-1", 64, "Spanish-English", "Metalinguistic awareness—correcting errors", 0.39,
+  "Galambos and Goldin-Meadow (1990)", "PreK-1", 64, "Spanish-English", "Metalinguistic awareness—explaining errors", 0.09,
+  "Gutierrez-Clellen et al. (2004)", "3", 44, "Spanish-English", "Working memory using two tasksw", -0.09,
+  "Humphreys and Mumtaz (2001)", "2-3", 120, "Urdu-English", "Working memory", 1.52,
+  "Jordà-Maria (2003)", "PSec", 160, "Catalan-Castilian", "Metalinguistic awareness: Metapragmatic", 0.66,
+  "Keshavarz and Astaneh (2004)", "PSec", 60, "Mixed-Persianx", "Metalinguistic awareness", 0.56,
+  "Loizou and Stuart (2003)", "1", 32, "Greek-English", "Metalinguistic awareness using several tasksy", 0.96,
+  "Loizou and Stuart (2003)", "1", 36, "English-Greek", "Metalinguistic awareness using several tasks", -0.34,
+  "Love et al. (2003)", "PSec", 71, "Mixed-English", "Metalinguistic awareness: syntactic processing", 0.2,
+  "Merriman and Kutlesic (1993)", "K-2", 78, "Serbian-English", "Metalinguistic awareness", 0.48,
+  "Oller et al. (2007)", "2", 288, "Spanish-English", "Metalinguistic awarenessz", 1.07,
+  "Oller et al. (2007)", "4", 296, "Spanish-English", "Metalinguistic awareness with several measures", 0.49,
+  "Ransdell et al. (2006)", "PSec", 137, "Mixed-English", "Metacognitive awarenessaa", 0.16,
+  "Reichard and Mokhtari (2004)", "PSec", 350, "Mixed-English", "Metacognitive awareness and strategies", 0.39,
+  "Sanz (2000)", "8-12", 201, "Catalan-Spanish", "Metalinguistic awareness with several measures", 0.68,
+  "Sheng et al. (2006)", "K-3", 24, "Mandarin-English", "Metalinguistic awareness with several measuresbb", 0.22
+)
+
+
+
+data_adesope <- as.data.frame(data_adesope)
+
+meta_g <- 0.41
+
+data_adesope$Critical_g <- rep(NA,nrow(data_adesope))
+c1 <- match("N",names(data_adesope))
+Q <- 0
+
+for(i in 1:nrow(data_adesope)){
+  
+  n1 <- round(data_adesope[i,c1]/2,0)
+
+  gc_ade <- critical_t2s(n1 = n1, n2 = n1, hypothesis = "two.sided", conf.level = 0.95)$gc
+
+  Q <- Q + 1
+  data_adesope[Q, "Critical_g"] <- gc_ade
+}
+
+P_l_adesope <- sum(data_adesope$Critical_g < meta_g)/length(data_adesope$Critical_g)*100
+
+
+```
+
+## @talamini2017musicians {.smaller}
+
+This meta-analysis investigates differences between musicians and non-musicians in working memory tasks expressing the effect is Hedge's g due to the small samples. 
+
+It has 3 meta-analyses:
+
+- long term memory,
+
+- short term memory  
+
+- working memory 
+
+We will compute critical values for two tailed t-test, assuming alpha at the .05 threshold and plot them comparing them to the meta-analytic effect. 
+
+![](img/wmt.png){.absolute bottom=130 right=150 width="200" height="150"}
+
+
+```{r, warning=FALSE, message=FALSE}
+Meta_g_L <- .29 # meta-effect
+MetaB_g_L <- .21 # meta-effect corrected for bias
+
+
+data_long$Critical_2t <- rep(NA,nrow(data_long))
+data_long$Critical_1t <- rep(NA,nrow(data_long))
+c1 <- match("N_MUSICIANS",names(data_long))
+c2 <- match("N_NONMUSICIANS",names(data_long))
+Q <- 0
+
+for(i in 1:nrow(data_long)){
+  
+  n1 <- data_long[i,c1]
+  n2 <- data_long[i,c2]
+
+  gc_2t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "two.sided", conf.level = 0.95)$gc
+
+  gc_1t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "greater", conf.level = 0.95)$gc
+  
+  Q <- Q + 1
+  data_long[Q, "Critical_2t"] <- gc_2t
+  data_long[Q, "Critical_1t"] <- gc_1t
+}
+
+P_l_l <- sum(data_long$Critical_2t < Meta_g_L)/length(data_long$Critical_2t)*100
+PB_l_l <- sum(data_long$Critical_2t < MetaB_g_L)/length(data_long$Critical_2t)*100
+
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+Meta_g_S <- .57 # meta-effect
+MetaB_g_S <- .39 # meta-effect corrected for bias
+
+data_short$Critical_2t <- rep(NA,nrow(data_short))
+data_short$Critical_1t <- rep(NA,nrow(data_short))
+c1 <- match("N_MUSICIANS",names(data_short))
+c2 <- match("N_NONMUSICIANS",names(data_short))
+Q <- 0
+
+for(i in 1:nrow(data_short)){
+  
+  n1 <- data_short[i,c1]
+  n2 <- data_short[i,c2]
+
+  gc_2t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "two.sided", conf.level = 0.95)$gc
+
+  gc_1t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "greater", conf.level = 0.95)$gc
+  
+  Q <- Q + 1
+  data_short[Q, "Critical_2t"] <- gc_2t
+  data_short[Q, "Critical_1t"] <- gc_1t
+}
+
+P_s <- sum(data_short$Critical_2t < Meta_g_S)/length(data_short$Critical_2t)*100
+PB_s<- sum(data_short$Critical_2t < MetaB_g_S)/length(data_short$Critical_2t)*100
+
+```
+
+```{r, warning=FALSE, message=FALSE}
+Meta_g_WM <- .56 # meta-effect
+
+
+data_wm$Critical_2t <- rep(NA,nrow(data_wm))
+data_wm$Critical_1t <- rep(NA,nrow(data_wm))
+c1 <- match("N_MUSICIANS",names(data_wm))
+c2 <- match("N_NONMUSICIANS",names(data_wm))
+Q <- 0
+
+for(i in 1:nrow(data_wm)){
+  
+  n1 <- data_wm[i,c1]
+  n2 <- data_wm[i,c2]
+
+  gc_2t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "two.sided", conf.level = 0.95)$gc
+
+  gc_1t <- critical_t2s(n1 = n1, n2 = n2, hypothesis = "greater", conf.level = 0.95)$gc
+  
+  Q <- Q + 1
+  data_wm[Q, "Critical_2t"] <- gc_2t
+  data_wm[Q, "Critical_1t"] <- gc_1t
+}
+
+P_wm <- sum(data_wm$Critical_2t < Meta_g_WM)/length(data_wm$Critical_2t)*100
+
+
+```
+
+## Long Term Memory
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+# Create a data frame for the vertical lines
+vline_data <- data.frame(
+  LineType = factor(
+    c("Meta-analytic effect", "Bias-corrected effect"),
+    levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect", "Bias-corrected effect")
+  ),
+  x = c(Meta_g_L, MetaB_g_L)
+)
+
+data_long %>%
+  select(AUTHORS, Hedges_g, Critical_2t) %>%
+  pivot_longer(cols = c(Hedges_g, Critical_2t), names_to = "Measure", values_to = "Value") %>%
+  mutate(Measure = factor(Measure, levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect", "Bias-corrected effect"))) %>%
+  ggplot(aes(x = Value, y = reorder(AUTHORS, Value), color = Measure)) +
+  geom_point(size = 3) +
+  geom_vline(data = vline_data, aes(xintercept = x, color = LineType),
+             linetype = "dashed", linewidth = 1, show.legend = TRUE) +
+  scale_color_manual(
+    values = c(
+      "Hedges_g" = "steelblue",
+      "Critical_2t" = "firebrick",
+      "Meta-analytic effect" = "black",
+      "Bias-corrected effect" = "grey"
+    )
+  ) +
+  labs(
+    title = "Effect Sizes vs Critical Values",
+    x = "Value",
+    y = "Study (Author)",
+    color = "Measure / Reference Line"
+  ) +
+  theme_minimal()
+
+
+```
+
+## Long Term Memory
+
+- In `r P_l_l`\% of cases, the critical value was lower than the meta-analytic effect size, indicating that **none** of the studies in the meta-analysis could have detected significance for the meta-analytic effect. 
+
+- When comparing the critical values to the bias corrected meta-analytic effect size the percentage remains `r PB_l_l`\%, as it cannot go any lower.
+
+## Short Term Memory
+
+```{r, warning=FALSE, message=FALSE}
+
+
+vline_data <- data.frame(
+  LineType = factor(
+    c("Meta-analytic effect", "Bias-corrected effect"),
+    levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect", "Bias-corrected effect")
+  ),
+  x = c(Meta_g_S, MetaB_g_S)
+)
+
+data_short %>%
+  select(AUTHORS, Hedges_g, Critical_2t) %>%
+  pivot_longer(cols = c(Hedges_g, Critical_2t), names_to = "Measure", values_to = "Value") %>%
+  mutate(Measure = factor(Measure, levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect", "Bias-corrected effect"))) %>%
+  ggplot(aes(x = Value, y = reorder(AUTHORS, Value), color = Measure)) +
+  geom_point(size = 3) +
+  geom_vline(data = vline_data, aes(xintercept = x, color = LineType),
+             linetype = "dashed", linewidth = 1, show.legend = TRUE) +
+  scale_color_manual(
+    values = c(
+      "Hedges_g" = "steelblue",
+      "Critical_2t" = "firebrick",
+      "Meta-analytic effect" = "black",
+      "Bias-corrected effect" = "grey"
+    )
+  ) +
+  labs(
+    title = "Effect Sizes vs Critical Values",
+    x = "Value",
+    y = "Study (Author)",
+    color = "Measure / Reference Line"
+  ) +
+  theme_minimal()
+
+```
+
+
+## Short Term Memory
+
+- In `r P_s`\% of cases, the critical value was lower than the meta-analytic effect size, indicating that `r 100 - P_s`\% of the studies **couldn't** reach significance for the meta-analytic effect. 
+
+- When comparing the critical values to the bias corrected meta-analytic effect size the percentage lowered to `r PB_s`\%.
+
+## Working Memory
+
+```{r, warning=FALSE, message=FALSE}
+
+vline_data <- data.frame(
+  LineType = factor("Meta-analytic effect",
+                    levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect")),
+  x = Meta_g_WM
+)
+
+data_wm %>%
+  select(AUTHORS, Hedges_g, Critical_2t) %>%
+  pivot_longer(cols = c(Hedges_g, Critical_2t), names_to = "Measure", values_to = "Value") %>%
+  mutate(Measure = factor(Measure, levels = c("Hedges_g", "Critical_2t", "Meta-analytic effect"))) %>%
+  ggplot(aes(x = Value, y = reorder(AUTHORS, Value), color = Measure)) +
+  geom_point(size = 3) +
+  geom_vline(data = vline_data, aes(xintercept = x, color = LineType),
+             linetype = "dashed", linewidth = 1, show.legend = TRUE) +
+  scale_color_manual(
+    values = c(
+      "Hedges_g" = "steelblue",
+      "Critical_2t" = "firebrick",
+      "Meta-analytic effect" = "black"
+    )
+  ) +
+  labs(
+    title = "Effect Sizes vs Critical Values",
+    x = "Value",
+    y = "Study (Author)",
+    color = "Measure / Reference Line"
+  ) +
+  theme_minimal()
+
+```
+
+## Working Memory
+
+- In `r round(P_wm,2)`\% of cases, the critical value was lower than the meta-analytic effect size, indicating that these studies would have been able to detect a statistically significant effect of that magnitude.
+
+- In this meta-analysis no bias was detected.
+
+# Who cited the meta did implement knowledge into sample size?
+
+## Review of articles citing @talamini2017musicians
+
+```{r, include=FALSE}
+cited_meta <- read_excel("/Users/ambraperugini/Documents/Work/Conferences/Presentazioni/PMGS_2025/cited_meta_grassi.xls")
+colnames(cited_meta)
+
+table(cited_meta$PDF_avaiable)
+table(cited_meta$PW_Applicable)
+table(cited_meta$Power_Computed)
+table(cited_meta$PW_Applicable[cited_meta$Power_Computed=="Yes"])
+
+
+```
+
+::: {.incremental}
+
+- Of the **214** works citing the meta-analysis, **121** had an accessible manuscript. 
+
+- Of those **121** manuscripts, **21** had a research design that was compatible with the meta-analysis.
+
+- Of those **21**, only **2** had run a power analysis **but** they ***did not choose the effect size based on that meta-analysis***.
+
+- A total of **22** manuscripts out of **121** reported a power analysis.
+
+:::
+
+## More cases 
+
+In other 3 meta-analysis [@harkin2016does; @miller2015meta; @adesope2010systematic] we found that only `r round((PB_l_harkin_ga + PB_l_harkin_pm + P_l_miller + P_l_adesope)/4,2)`\% of individual studies had the chance to find a significant result assuming the meta-analytic effect to be true.
+
+One of the studies had a meta-analytic effect of 1.16, if this one is removed the percentage drops to `r round((PB_l_harkin_ga + P_l_miller + P_l_adesope)/3,2)`\%.
+
+\
+
+::: {style="font-size: .5em;"}
+
+@harkin2016does: does monitoring goal progress promote goal attainment? 
+
+@miller2015meta: confidence and judgment accuracy in clinical decision making. 
+
+@adesope2010systematic: cognitive correlates of bilingualism.
+
+:::
+
+## Limitations and Future Steps
+
+- Selecting **arbitrarily** 3-4 meta-analyses is **not enough** to drag conclusions on a field
+
+- We will **systematically select** at least **15** meta-analysis from 2016
+
+- We will look into papers citing those meta-analysis as we did for @talamini2017musicians
+
+## Final Questions to be answered
+
+\
+
+[**How many meta-analysis** would be **enough** to drag conclusions on the matter?]{style="color:#9B0014;"}
+
+\
+
+[What is the **percentage of problematic studies** that would convince you that the problem is real?]{style="color:#9B0014;"}
+
+\
+
+::: {style="font-size: .6em;"}
+
+If you are interested in our first paper on Critical Effect Size Values:
+
+Stay tuned for the next one ;)
+
+:::
+
+![](img/criticalES.png){.absolute bottom=-20 right=30 width="200" height="200"}
+
+## REFERENCES 
+
+

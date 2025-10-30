@@ -1,0 +1,10 @@
+---
+title: "Is my meta-analysis useless? Assessment of cumulative research through critical effect size values"
+format: pdf
+---
+
+The use of meta-analysis is crucial for synthesizing empirical evidence and estimating the overall effect size in a given field of interest. Meta-analyses are among the most highly cited papers in scientific literature, as they provide valuable insights into the state of the art for a particular research question. However, how often are these effect size estimates actually used to design future studies?
+
+The present work will try to answer this question by exploring some existing meta-analyses. First, critical effect size values will be computed for individual studies included in meta-analyses, in order to assess whether those studies could have detected a significant effect assuming the meta-analytic effect size. Then, we will investigate whether studies that cite those meta-analyses use the reported effect size estimates for planning sample sizes in subsequent research.
+
+The goal of this project is to demonstrate the practical utility of critical effect size values and to show how they can be used to evaluate the cumulative and progressive nature of scientific research within a field.

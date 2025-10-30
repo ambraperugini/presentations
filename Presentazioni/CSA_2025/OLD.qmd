@@ -1,0 +1,629 @@
+---
+institute: "\\ Cognitive Science Arena 13 - 16 October 2025 | Brixen"
+title: Do the areas overlap? An implementation of the Permutation Test on the Overlapping Index
+author: Ambra Perugini, Giulia Calignano, Massimo Nucci, Livio Finos, Massimiliano Pastore
+
+format:
+  revealjs: 
+    logo: img\logo_psicostat.png
+    footer: "ambra.perugini@phd.unipd.it"
+    theme: [theme.scss]
+    self-contained: true
+    embed-resources: true
+    slide-number: true
+    execute: 
+      cache: true
+---
+
+```{r}
+library(knitr)
+options(digits=3)
+opts_chunk$set(fig.width=4, fig.height=3, fig.align='center',echo=FALSE,results="hide",comment=NA,prompt=FALSE,warning=FALSE)
+```
+
+```{r, include=FALSE}
+rm(list=ls())
+main <- "/Users/ambraperugini/Library/CloudStorage/OneDrive-UniversitàdegliStudidiPadova/Lavoro/Conferences/Presentazioni/CSA_2025/"
+
+datadir <- paste0(main,"data/")
+# KUtils::pulizia(paste(main,"knitr/",sep=""), c(".Rnw",".bib","pdf"),TRUE)
+```
+
+```{r, include=FALSE}
+# ++++++++++++++++++++++++++++++++++
+betapar <- function(mx,sx,n=NULL) {
+  vx <- sx^2
+  if (vx<(mx*(1-mx))) {
+    pezzo <- ((mx*(1-mx))/vx)-1
+    a <- mx*pezzo
+    b <- (1-mx)*pezzo
+  } else {
+    warning("adjusted formula by using n")
+    a <- mx*n
+    b <- (1-mx)*n
+  }
+  return(list(a=a,b=b))
+}
+
+# +++++++++++++++++++++++++++
+snpar <- function(xi=0,omega=1,alpha=0) {
+  delta <- alpha/sqrt(1+alpha^2)
+  mu <- xi + omega * delta * sqrt( 2/pi )
+  sigma2 <- omega^2 * ( 1 - (2*delta^2)/pi )
+  return(list(mu = mu, sigma = sqrt(sigma2)))
+}
+
+# +++++++++++++++++++++++++++
+sninvpar <- function( mu=0, sigma=1, xi=NULL, omega=NULL, alpha=0 ) {
+  
+  if (is.null(omega)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    omega2 <- sigma^2 / ( 1 - (2*delta^2) / pi )
+    omega <- sqrt( omega2 )
+  }
+  
+  if (is.null(xi)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    xi <- mu - omega * delta * sqrt( 2/pi )
+  }
+  
+  return( list( xi = xi, omega = omega, alpha = alpha ) )
+  
+}
+
+# +++++++++ funzione colori default
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+# +++++++++++++++++++++++++++++++
+#' @name min_normal_uniform
+#' @description Calcola il minimo tra la densità di una normale e di una uniforme
+#' @param x = x vector
+#' @param normPars = parametri della normale: media e dev. standard
+#' @param unifPars = parametri della uniforme: minimo e massimo
+#' #' @param return.all = logical, if \code{TRUE} restituisce il data set completo delle densità delle due distribuzioni
+min_normal_uniform <- function( x = NULL, normPars = c(0,1), unifPars = c(0,1), return.all = FALSE ) {
+  
+  if (is.null(x)) x <- seq(-5,5,by=.1)
+  
+  y1 <- dnorm(x, normPars[1], normPars[2])
+  y2 <- dunif(x, unifPars[1], unifPars[2])
+  dy <- ifelse(y1<y2, y1, y2)
+  
+  gData <- data.frame( x, y1, y2, dy )  
+  
+  if (return.all) {
+    return( list( gData = gData ) )
+  } else {
+    return( dy )  
+  }
+
+}
+
+
+
+# +++++++++++++++++++++++++++++++++++
+#' @name min_dskew_normal
+#' @description Calcola il minimo tra due densità Skew-Normal
+#' @param x = x vector
+#' @param xi = vector of location parameters
+#' @param omega = vector of scale parameters
+#' @param alpha = vector of skewness parameters
+#' @param plot = logical, if \code{TRUE} produce la rappresentazione grafica delle densità 
+#' e dell'area di sovrapposizione
+#' @param return.all = logical, if \code{TRUE} restituisce il data set completo delle 
+#' densità delle due distribuzioni
+min_dskew_normal <- function( x = seq( -5, 5, by = .01 ), xi = c(0,0), omega = c(1,1), alpha = c(0,0), 
+                              return.all = FALSE ) {
+  
+  if (length(xi)==1) xi <- rep(xi,2)
+  if (length(omega)==1) omega <- rep(omega,2)
+  if (length(alpha)==1) alpha <- rep(alpha,2)
+  
+  require( sn )
+  y1 <- dsn( x, xi = xi[1], omega = omega[1], alpha = alpha[1] )
+  y2 <- dsn( x, alpha = alpha[2], xi = xi[2], omega = omega[2] )
+  dy <- ifelse( y1 < y2, y1, y2 )
+  gData <- data.frame( x, y1, y2, dy )  
+  
+  if (return.all) {
+    return( list( gData = gData ) )
+  } else {
+    return( dy )  
+  }
+}
+
+# ++++++++++++++++++++++++++++
+#' @name permTest
+#' @description Esegue test di permutazione su overlapping, 
+#'differenza tra medie e rapporto tra varianze
+#' @param xList = lista di due elementi (\code{x1} e \code{x2} ) 
+#' @param B = numero di permutazioni da effettuare
+#' @param ov.type = character, type of index. If type = "2" returns the proportion of the overlapped area between two or more densities. 
+#' @note Il confronto tra le medie è ad una sola coda e 
+#'testa l'ipotesi che le medie siano uguali vs l'ipotesi
+#'che la seconda sia maggiore della prima (\code{mean(x2) > mean(x1)})
+#' @return Restituisce una lista con tre elementi:
+#' obs = vettore dei valori osservati di non-sovrapposizione 
+#'       \coed{1-eta}, differenza tra le medie (\code{mean(x2)-mean(x1)}), 
+#'       rapporto tra le varianze
+#' perm = matrice Bx3 con i valori delle stesse statistiche ottenute
+#'        via permutazione
+#' pval = vettore con i tre p-values   
+permTest <- function( xList, B = 1000, ov.type = c("1","2")) {
+  
+  require(overlapping)
+  ov.type <- match.arg(ov.type)
+  names(xList) <- c("x1","x2")
+  N <- unlist( lapply(xList,length) )
+  
+  # observed statistics
+  zobs <- 1-overlap( xList, type = ov.type )$OV
+  dobs <- diff( unlist( lapply(xList, mean) ) )
+  Fobs <-  with( xList, var.test(x1,x2)$statistic )
+  OBS <- data.frame(zobs,dobs,Fobs)
+  Mobs <- matrix( OBS, nrow=B, ncol=3, byrow = TRUE )
+  
+  Yperm <- t( sapply(1:B, function(b){
+    xperm <- sample( unlist( xList ) )
+    xListperm <- list( x1 = xperm[1:N[1]], x2 = xperm[(N[1]+1):(sum(N))] )
+    
+    zperm <- 1 - overlap( xListperm, type = ov.type )$OV
+    dperm <- diff( unlist( lapply(xListperm, mean) ) )
+    Fperm <-  with( xListperm, var.test(x1,x2)$statistic )
+    
+    out <- c(zperm,dperm,Fperm)
+    names(out) <- c("zperm","dperm","Fperm")
+    out
+  }) )
+  
+  PVAL <- (apply( Yperm >= Mobs, 2, sum )+1)/(nrow(Yperm)+1)
+  L <- list(obs=OBS,perm=Yperm,pval=PVAL)
+  
+  return(L)
+}
+
+# ++++++++++++++++++++++++++
+#' @name numeriAPA
+#' @description Toglie lo zero dagli indici inclusi nell'intervallo [0,1], secondo norme APA
+numeriAPA <- function(x) {
+  gsub("0\\.","\\.",as.character(x))
+}
+
+## +++++++++++++++++++++++++++++++++++++++++++
+#' @title Grafico correlazioni
+#' @param RR = correlation matrix
+#' @param U = vettore con i margini del grafico
+plot_correlation <- function(RR,values=FALSE,textsize=12,legendsize=10,angle=0, corrsize=4, U=c(0,0,0,0), short.names = FALSE) {
+  require(ggplot2)
+  require(reshape2)
+  RR <- melt(RR)
+  NAME <- "Correlation"
+  
+  if (short.names) {
+    levels(RR$Var2) <- paste0("(",1:length(levels(RR$Var2)),")")
+  }
+  
+  GGcor <- ggplot(RR,aes(Var2,Var1,fill=value))+geom_tile()+
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white",midpoint =0, space = "Lab",name=NAME)+
+    xlab("")+ylab("")+coord_fixed()+
+    theme(plot.margin = unit(U, "cm"),
+          text=element_text(size=textsize),
+          axis.text.x=element_text(angle=angle),
+          legend.text = element_text(size = legendsize),legend.title = element_text(size = legendsize)) 
+  
+  if (values) {
+    GGcor <- GGcor + geom_text(aes(Var2, Var1, label = round(value,2)), color = "black", size = corrsize )
+  }
+  print(GGcor)
+}
+
+# ++++++++++++++++++++++++++++
+#' @name perm.test
+#' @description Esegue test di permutazione su overlapping, 
+#'differenza tra medie e rapporto tra varianze
+#' @param x = lista di due elementi (\code{x1} e \code{x2} ) 
+#' @param B = numero di permutazioni da effettuare
+#' @return Restituisce una lista con tre elementi:
+#' obs = valore osservato di non-sovrapposizione 
+#'       \coed{1-eta}
+#' perm = valori della stessa statistica ottenute
+#'        via permutazione
+#' pval = p-value   
+perm.test <- function (x, B = 1000, 
+               return.distribution = FALSE, ...)
+{
+  
+  # control 
+  args <- c(as.list(environment()), list(...))
+  pairsOverlap <- ifelse(length(x)==2, FALSE, TRUE)
+  
+  N <- unlist( lapply(x,length) )
+  out <- overlap(x, ...)
+  
+  if (pairsOverlap) {
+    zobs <- 1-out$OVPairs
+    Zperm <- t(sapply(1:B, function(b) {
+      xListperm <- perm.pairs( x )
+      ovperm <- unlist( lapply(xListperm, overlap, ...) )
+      zperm <- 1 - ovperm
+    }))
+  } else {
+    zobs <- 1-out$OV
+    Zperm <- t(sapply(1:B, function(b) {
+      xperm <- sample( unlist( x ) )
+      xListperm <- list( x1 = xperm[1:N[1]], x2 = xperm[(N[1]+1):(sum(N))] )      
+      zperm <- 1 - overlap( xListperm, ... )$OV
+    }))
+  }
+  
+  
+  ## (sum( zperm >= obsz ) +1) / (length( zperm )+1) LIVIO
+  
+  colnames(Zperm) <- gsub("\\.OV","",colnames(Zperm))
+  if (nrow(Zperm) > 1) {
+    
+    ZOBS <- matrix( zobs, nrow(Zperm), ncol(Zperm), byrow = TRUE )
+    pval <- (apply( Zperm > ZOBS, 2, sum ) + 1)/ (nrow(Zperm)+1)
+    
+  } else {
+    pval <- (sum(Zperm > zobs)+1) / (length(Zperm)+1)
+  }
+  
+  if (return.distribution) {
+    return(list(Zobs = zobs, pval = pval, Zperm = Zperm))
+  } else {
+    return(list(Zobs = zobs, pval = pval))  
+  }
+  
+  
+}
+
+```
+
+## Croups/Conditions
+
+```{r esempio1, warning=FALSE,message=FALSE}
+library(overlapping)
+library(dplyr)
+
+
+normPars <- c(10,2)
+unifPars <- c(0,20)
+n <- 30 
+
+
+set.seed(36)
+
+x <- rnorm(n, normPars[1], normPars[2])
+y <- runif(n, unifPars[1], unifPars[2])
+
+LIST<-list(x,y)
+OV <- overlap(LIST)
+OV_perm<- permTest(LIST, B = 1000)
+TTEST <- t.test(x,y, var.equal = TRUE)
+TTESTUNEQUAL <- t.test(x,y, var.equal = FALSE)
+OV_P<-round(OV_perm$pval[1],4)
+
+Y <- stack( data.frame(y1=x,y2=y) )
+
+myData <- data.frame( x = seq(0,20,by=.1) )
+myData$y1 <- dnorm(myData$x, normPars[1], normPars[2] )
+myData$y2 <- dunif(myData$x, unifPars[1], unifPars[2])
+myData$h <- with(myData, ifelse( y1 < y2, y1, y2 ))
+
+
+AREA <- integrate( min_normal_uniform, -Inf, Inf, normPars = normPars, unifPars = unifPars )
+
+
+```
+
+```{r bar_plot}
+
+# Compute mean and standard error
+summary_data <- Y %>%
+  group_by(ind) %>%
+  summarise(
+    mean_value = mean(values),
+    se = sd(values) / sqrt(n())
+  )
+
+# Plot bar graph with error bars
+ggplot(summary_data, aes(x = ind, y = mean_value, fill = ind)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.6) +
+  geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se),
+                width = 0.2, position = position_dodge(0.6)) +
+  labs(x = "Groups", y = "Variable of interest") +
+  theme_minimal() +
+  scale_fill_manual(values = c("pink", "violet")) +
+  guides(fill = "none")
+
+```
+
+## $t$-test
+
+```{r, include=TRUE, results='markup'}
+TTEST
+```
+
+## But..
+
+```{r equalmean}
+
+library(cowplot)
+
+theme_set(theme_bw())
+  
+  ggplot(Y, aes(values,fill=ind,color=ind)) + geom_density(alpha = .5) + xlab("") + theme(legend.title = element_blank()) + ylab("") + 
+    scale_y_continuous( breaks = NULL ) + guides(fill="none",color="none")
+
+```
+
+<!-- The estimated overlapping area is $\eta =$ `r round(OV$OV,2)`  -->
+
+## The Overlapping Index
+
+The overlapping ($\eta$) is an index of effect size and varies from 0 (no overlap between to densities of the data) and 1 (complete overlap), formally defined in the following way:
+
+```{=tex}
+\begin{eqnarray}
+\eta (A,B) = \int_{\mathbb{R}^n} min [f_A (x),f_B (x)] dx
+\end{eqnarray}
+```
+$\eta (A,B)$ is normalized to one and when the distributions of A and B do not have points in common, meaning that $f_A (x)$ and $f_B (x)$ are disjoint, $\eta (A,B) = 0$
+
+## Permutation tests
+
+-   rearrange the data $B$ times
+-   calculate the statistic for each new dataset of permuted data
+-   calculate $p$- value as the probability of obtaining equal or more extreme values
+
+<!-- The basic principle of permutation testing is based on the idea of rearranging observed data to generate a null distribution and for each new dataset of rearranged data the statistic is recalculated. The $p$-value is the probability of obtaining an equal or more extreme $t$-statistic compared to the observed one. -->
+
+```{=tex}
+\begin{eqnarray}
+p=\frac{(\#_{b=1}^B |t_b|\geq |t|)+1}{B+1}
+\end{eqnarray}
+```
+::: {style="font-size: 80%;"}
+where $B$ is the number of random permutations, $t$ is the $t$-statistic computed on the observed data, $t_b$ are those computed on the permuted data.
+:::
+
+## Applied to the Overlapping Index
+
+Usually $H_0$ is defined as the absence of an effect.
+
+As $\eta$ is the area of overlap, the higher the overlap, the closer the value to 1.
+
+For simplicity, instead of working with $\eta$ now we will work with the complement $\zeta$, defined as $1 - \eta = \zeta$ and define $H_0 : \zeta = 0$ meaning that there is no difference between the densities of the two populations.
+
+## Applied to the Overlapping
+
+-   the permutation test is applied to $\zeta$:
+
+<!-- Now instead of working with $\eta$, it is more intuitive to work with the complement $1 - \eta = \zeta$ and define $H_0 : \zeta = 0$ meaning that there is no difference between the densities of the two populations. -->
+
+```{=tex}
+\begin{eqnarray*}
+p = \frac{(\# \hat{\zeta}_b \geq \hat{\zeta})+1 }{B+1}
+\end{eqnarray*}
+```
+The principle is the same, we shuffle the data and calculate $\zeta$ B times to calculate the $p$-value.
+
+<!-- ## {} -->
+
+<!-- ::: {style="font-size: 95%;"} -->
+
+<!-- The algorithm estimates the value of $\zeta$ on the observed data ($\hat{\zeta}$). Then, through permutation, the observed values of the two groups are randomly re-assigned to the groups for B times, estimating again the new value of  $\hat{\zeta}_b$. The times in which the estimate of $\hat{\zeta}_b$ on permuted data is higher or equal than the one observed on real data is estimated ($\hat{\zeta}_b \geq \hat{\zeta}$) and then the found value is divided by B, returning the $p$-value. -->
+
+<!-- ::: -->
+
+## Back to our example
+
+```{r permtest, results='markup',include=TRUE}
+OV<-OV$OV[1]
+OV
+OV_P
+obsz <- 1 - overlap( LIST )$OV
+
+B <- 1000
+n <- length(LIST[[1]])
+zperm <- sapply( 1:B, function(x){
+  xperm <- sample( unlist( LIST ) )
+  xListperm <- list( x1 = xperm[1:n], x2 = xperm[(n+1):(n*2 )] )
+  1 - overlap( xListperm )$OV
+})
+
+ZPERM <- data.frame(zperm)
+
+```
+
+```{r}
+ggplot(ZPERM,aes(zperm))+geom_vline(xintercept = obsz,lty=2) +geom_density(fill="violet",alpha=.5)+xlab("") +ylab("") 
+```
+
+## The simulation study
+
+```{r scenari,fig.width=7,message=FALSE}
+library(sn)
+
+PARlist <- list(
+  xi_vec = c(0,.5,1),
+  omega_vec = c(1,2,3),
+  alpha_vec = c(0,1,2)
+)
+
+x <- seq(-5,5,by=.1)
+
+gData <- NULL
+for (j in 1:3) {
+  
+  # xi
+  y <- with( PARlist, dsn(x,xi_vec[j],omega_vec[1],alpha_vec[1]) )
+  xi <- PARlist$xi_vec[j]
+  omega <- PARlist$omega_vec[1]
+  alpha <- PARlist$alpha_vec[1]
+  scenario <- "xi"
+  dd <- data.frame(x,y,xi,omega,alpha,scenario)  
+  gData <- rbind(gData,dd)  
+  
+  # omega
+  y <- with( PARlist, dsn(x,xi_vec[1],omega_vec[j],alpha_vec[1]) )
+  xi <- PARlist$xi_vec[1]
+  omega <- PARlist$omega_vec[j]
+  alpha <- PARlist$alpha_vec[1]
+  scenario <- "omega"
+  dd <- data.frame(x,y,xi,omega,alpha,scenario)  
+  gData <- rbind(gData,dd)  
+   
+  # alpha
+  y <- with( PARlist, dsn(x,xi_vec[1],omega_vec[1],alpha_vec[j]) )
+  xi <- PARlist$xi_vec[1]
+  omega <- PARlist$omega_vec[1]
+  alpha <- PARlist$alpha_vec[j]
+  scenario <- "alpha"
+  dd <- data.frame(x,y,xi,omega,alpha,scenario)  
+  gData <- rbind(gData,dd)  
+  
+}
+
+gData$xi <- factor(gData$xi)
+gData$omega <- factor(gData$omega)
+gData$alpha <- factor(gData$alpha)
+
+
+```
+
+```{r}
+load(paste0(datadir,"R02_sim07.rda"))
+NTAB <- table(ALL$n,ALL$mu,ALL$sigma,ALL$alpha)
+```
+
+::: {style="font-size: 95%;"}
+-   $\delta$ = (`r PARlist$mu_vec`); mean of the second population; <!-- , which corresponds also to the difference between the two groups, the first one has always $\mu = 0$ -->
+-   $\sigma$ = (`r PARlist$sigma_vec`); standard deviation of the second population;
+-   $\alpha$ = (`r PARlist$alpha_vec`); degree of asymmetry (skewness) of the second population;
+-   $n$ = (`r PARlist$n_vec`); sample size, equal in the two samples.
+:::
+
+For each of the `r length(PARlist$mu_vec)` $\times$ `r length(PARlist$sigma_vec)` $\times$ `r length(PARlist$alpha_vec)` $\times$ `r length(PARlist$n_vec)` $= 180$ conditions we generated `r NTAB[1,1,1,1]` sets of data on which we performed the analysis.
+
+## Statistical tests for comparison
+
+::: {style="font-size: 80%;"}
+For each combination $\delta$ $\times$ $\sigma$ $\times$ $\alpha$ $\times$ $n$, on the generated data were performed the following tests:
+
+-   **Permutation test** on the complement of the **Overlapping Index** ($\zeta_{ov}$), $\zeta = 1-\eta$; <!-- , which therefore becomes an index of difference between groups -->
+-   $F$ test (F) of homogeneity of variances;
+-   **Kolmogorov-Smirnov test** (ks) comparing the cumulative distributions.
+-   **Wilcoxon-Mann-Whitney test** (wmw) on ranks;
+-   **Welch test** (w) assuming normality but not homogeneity of variance;
+-   $t$ test (t) for independent samples, assuming equal variance and normality;
+:::
+
+## Type I error & Power
+
+\
+
+![](img/global_1.JPG){fig-align="center"}
+
+## Discussion
+
+-The $\zeta$ overlapping test is the most powerful choice, especially with small samples. - It is an intuitive index and it allows to investigate group differences behiond the mean - It also pushes the focus to a more nuanced approach to testing
+
+## Take home message
+
+::: {style="text-align: center"}
+-   Be aware of parametric tests assumptions
+
+-   Always plot your data BEFORE running the analysis
+
+-   Thinking Before Testing (cit. Richard McElreath )
+:::
+
+![](img\spongebob.JPG){fig-align="center"}
+
+## To find out more:
+
+::: {style="text-align: center;"}
+Here you can find our pre-print, on the implementation of the permutation test for the overlapping index
+
+[https://osf.io/preprints/osf/8h4fe_v1](https://osf.io/preprints/osf/8h4fe_v1){preview-link="true" style="text-align: center"}
+:::
+
+![](img/qr-code.png){.absolute bottom="20" right="375" width="300" height="300"}
+
+```{r, warning=FALSE,echo=FALSE,message=FALSE, fig.width=5, include=FALSE}
+
+library(overlapping)
+library(ggplot2)
+
+EngTurk <- read.csv("~/Library/CloudStorage/OneDrive-UniversitàdegliStudidiPadova/Lavoro/Conferences/Presentazioni/CSA_2025/data/EngTurk.csv")
+
+x <- EngTurk$ReactionTime[EngTurk$item == "long time"]
+y <- EngTurk$ReactionTime[EngTurk$item == "elderly mother"]
+LIST <- list(x=x,y=y)
+final.plot(LIST)
+t.test(x,y)
+
+```
+
+<!-- ## Who of you works with groups or conditions? -->
+
+<!-- - control group and treatment group  -->
+
+<!-- - athletes vs. non-athletes -->
+
+<!-- - frequent stimuli vs. less frequent stimuli (i.e. words) -->
+
+<!-- ## Who of you works with groups or conditions? -->
+
+<!-- - control group and treatment group  -->
+
+<!-- - athletes vs. non-athletes -->
+
+<!-- - frequent stimuli vs. less frequent stimuli (i.e. words) -->
+
+<!-- Were your data always normally distributed? -->
+
+<!-- ## {} -->
+
+<!-- Here a very common example: -->
+
+<!-- ::: {style="font-size: 80%;"} -->
+
+<!-- Reaction times -->
+
+<!-- ::: -->
+
+<!-- ## What would you usually do? -->
+
+<!-- - Was I supposed to check the data distribution?? -->
+
+<!-- - Used a $t$-test -->
+
+<!-- - Transformed the variable -->
+
+<!-- - Used test on ranks (i.e. Wilcoxon-Mann-Whitney) -->
+
+<!-- - Used non parametric tests -->
+
+<!-- ## What would you usually do? -->
+
+<!-- - Was I supposed to check the data distribution?? -->
+
+<!-- - Used a $t$-test -->
+
+<!-- - Transformed the variable -->
+
+<!-- - Used test on ranks (i.e. Wilcoxon-Mann-Whitney) -->
+
+<!-- - Used non parametric tests -->
+
+<!-- ::: {style="text-align: center"} -->
+
+<!-- A possible solution -->
+
+<!-- ::: -->

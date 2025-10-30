@@ -1,0 +1,41 @@
+\documentclass{article}
+\date{}
+\author{}
+\begin{document}
+
+
+\title{Progetto Open Science in Psicologia: Verso un Methodological Review Board Italiano}
+\maketitle
+
+\begin{center}
+Ambra Perugini, Giulia Calignano, Tatiana Marci, Filippo Gambarota, Massimiliano Pastore, Gianmarco Altoè\\
+\end{center}
+
+\begin{center}
+ambra.perugini@phd.unipd.it, giulia.calignano@unipd.it, tatiana.marci@unipd.it, filippo.gambarota@unipd.it, massimiliano.pastore@unipd.it, gianmarco.altoe@unipd.it \\
+\end{center}
+
+\begin{center}
+Dipartimento di Psicologia dello Sviluppo e della Socializzazione, Università di Padova, Itala\\
+\end{center}
+
+Keywords: Open Science, Methodological Review Board, Meta-Science \\
+
+
+\begin{large} 
+  Abstract:\\
+\end{large} 
+
+
+
+Il seguente progetto mira a creare solide basi per l'istituzione del primo Methodological Review Board (MRB) italiano in psicologia, ispirato al modello dell'Università di Eindhoven. L'obiettivo principale è favorire un approccio interdisciplinare, coinvolgendo psicologi, statistici, psicometristi e metodologi, per supportare e migliorare la qualità della ricerca psicologica nel nostro paese.
+
+Il MRB lavorerà in sinergia con i gruppi di ricerca, su base volontaria, per offrire consulenza metodologica lungo tutte le fasi di uno studio: dalla pianificazione e analisi statistica alla condivisione dei dati e alla diffusione di buone pratiche di Open Science. Tale iniziativa si propone di incrementare la riproducibilità, la replicabilità e l’impatto sociale della ricerca psicologica, promuovendo una cultura di rigore e trasparenza.
+
+Le azioni previste includono seminari divulgativi per il pubblico, formazione specializzata per ricercatori e professionisti, e un “sportello metodologico” per il supporto su ipotesi, preregistrazione, analisi, e uso di strumenti Open Science. Questo sportello sarà un primo passo verso la costituzione del MRB.
+
+Con il supporto della comunità internazionale, il progetto si propone di sensibilizzare ricercatori e cittadini sull'importanza della Meta-Science e delle pratiche aperte, creando una rete di conoscenza condivisa che possa avere ricadute significative per la società.
+
+
+
+\end{document}

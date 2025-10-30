@@ -1,0 +1,497 @@
+---
+institute: "\\ AIP Sperimentale 11 - 13 September 2025 | Torino"
+title: "Valutazione dell'Indice di Overlapping (η) tramite Simulazione: Un Confronto con gli Effect Size Tradizionali"
+author: Perugini, A., Calignano, G., Pastore, M.
+
+format:
+  revealjs: 
+    logo: img\logo_psicostat.png
+    footer: "ambra.perugini@phd.unipd.it"
+    center: true
+    slide-number: true
+    toc: false
+    toc-title: "Content"
+    self-contained: true
+    embed-resources: true
+    execute: 
+cache: true
+include-in-header:
+  - text: |
+      <style>
+      #title-slide .title {
+        font-size: 2em;
+        color: #9B0014;
+      }
+      .slide-logo {
+        height: 60px !important;
+        max-height: none !important;
+        position: absolute !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        top: unset !important;
+        left: unset !important;
+      }
+      </style>
+
+      
+---
+
+```{r}
+library(knitr)
+options(digits=3)
+opts_chunk$set(fig.width=4, fig.height=3, fig.align='center',echo=FALSE,results="hide",comment=NA,prompt=FALSE,warning=FALSE)
+```
+
+```{r, include=FALSE}
+rm(list=ls())
+main <- "/Users/ambraperugini/Documents/Work/Conferences/Presentazioni/AIP_2025/"
+
+datadir <- paste0(main,"data/")
+# KUtils::pulizia(paste(main,"knitr/",sep=""), c(".Rnw",".bib","pdf"),TRUE)
+
+esegui <- FALSE
+SEED <- 1
+```
+
+```{r}
+sninvpar <- function( mu=0, sigma=1, xi=NULL, omega=NULL, alpha=0 ) {
+  if (is.null(omega)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    omega2 <- sigma^2 / ( 1 - (2*delta^2) / pi )
+    omega <- sqrt( omega2 )
+  }
+  if (is.null(xi)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    xi <- mu - omega * delta * sqrt( 2/pi )
+  }
+  return( list( xi = xi, omega = omega, alpha = alpha ) )
+}
+
+
+```
+
+```{r}
+
+load( paste0(datadir, "ALL_500.rda") )
+
+library(effectsize)
+
+ALL$true_cles <- d_to_overlap(ALL$true_d)
+ALL$bias_cles <- with(ALL, cles - true_cles ) 
+ALL$rbias_cles <- with( ALL, (cles - true_overlap)/true_cles )
+
+
+```
+
+```{r}
+
+ALL$bias_eta <- ALL$bias_eta1
+ALL$rbias_eta <- ALL$rbias_eta1
+Y <- stack(ALL[,c("bias_eta","bias_cles")])
+Y$n <- factor(ALL$n)
+Y$mu <- factor(ALL$mu)
+Y$sigma <- factor(ALL$sigma)
+Y$alpha <- factor(ALL$alpha)
+Y$true_eta <- ALL$true_overlap
+
+MUSI <- data.frame( unique(Y[,c("mu","sigma","alpha")]) )
+MUSI$mu_num <- with( MUSI, as.numeric(levels(mu)[mu]))
+MUSI$sigma_num <- with( MUSI, as.numeric(levels(sigma)[sigma]))
+MUSI$alpha_num <- with( MUSI, as.numeric(levels(alpha)[alpha]))
+
+```
+
+
+```{r}
+BIAS <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Y, mean )
+BIAS$V <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Y, var )$values
+BIAS$x <- as.numeric(BIAS$n)
+
+```
+
+
+## Effect sizes for comparison
+
+-   **Overlapping index** ($\eta$) 
+
+-   **Common Language Effect Size** (CLES)
+
+## The Overlapping Index
+
+The overlapping ($\eta$) is an index of effect size and varies from 0 and 1.
+
+![](img/example.png){fig-align="center"}
+
+It is $0$ when the two distributions are completely disjoint and $1$ when there is complete overlap.
+
+## Common Language Effect Size (CLES) {.smaller}
+
+It express the probability that an observation randomly extracted from one group will be higher than the one extracted from the other group.
+
+```{r, fig.width=6,fig.height=5,fig.align="center"}
+
+library(ggplot2)
+
+# --- Target CLES and implied Cohen's d ---
+target_cles <- 0.75
+# For two normals with equal SD, CLES = Phi(d / sqrt(2))
+d <- sqrt(2) * qnorm(target_cles)
+
+# --- Choose group parameters consistent with that CLES ---
+mu_A <- 0
+sd_A <- 1
+mu_B <- mu_A - d * sd_A   # so that P(A > B) = 0.75
+
+# Distribution of D = A - B is Normal(mean = mu_A - mu_B, sd = sqrt(sd_A^2 + sd_B^2))
+mu_D  <- mu_A - mu_B
+sd_D  <- sqrt(sd_A^2 + sd_A^2)  # equal SDs assumed
+
+# Grid for the difference distribution
+x <- seq(mu_D - 4*sd_D, mu_D + 4*sd_D, length.out = 1000)
+dens <- dnorm(x, mean = mu_D, sd = sd_D)
+df <- data.frame(x = x, dens = dens, region = ifelse(x > 0, "A > B", "A ≤ B"))
+
+# Compute (and check) CLES analytically
+cles_calc <- 1 - pnorm(0, mean = mu_D, sd = sd_D)  # should be ~0.75
+
+p <- ggplot(df, aes(x, dens, fill = region)) +
+  geom_area(alpha = 0.6) +
+  geom_line(color = "black") +
+  geom_vline(xintercept = 0, linetype = 2) +
+  labs(
+    title = sprintf("P(A > B) = %.2f  |  Cohen's d ≈ %.2f", cles_calc, d),
+    x = "Pairwise difference: A − B",
+    y = "Density",
+    fill = NULL
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 16)
+  )
+
+# Show plot
+print(p)
+
+# Save image
+ggsave("cles_075_difference.png", p, width = 7, height = 5, dpi = 300)
+
+# --- (Optional) Also show overlapping group densities for A and B ---
+# This is a second figure, if you'd like it:
+xg <- seq(min(mu_A, mu_B) - 4, max(mu_A, mu_B) + 4, length.out = 1000)
+df_g <- rbind(
+  data.frame(x = xg, dens = dnorm(xg, mu_A, sd_A), group = "A"),
+  data.frame(x = xg, dens = dnorm(xg, mu_B, sd_A), group = "B")
+)
+
+p2 <- ggplot(df_g, aes(x, dens, color = group)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "Group Densities Consistent with CLES ≈ 0.75 (P(A > B))",
+    subtitle = sprintf("Means: μA=%.2f, μB=%.2f (sd=1), d≈%.2f", mu_A, mu_B, d),
+    x = "Value",
+    y = "Density",
+    color = NULL
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    legend.position = "top",
+    plot.title = element_text(face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 16)
+  )
+
+print(p2)
+ggsave("cles_075_groups.png", p2, width = 7, height = 5, dpi = 300)
+
+```
+
+
+
+## Study Design
+
+
+-  n = ***10, 50, 100, 300, 500***, equal in the two samples.
+
+-  Mean difference: $\delta$ = ***0, 1, 2***; 
+
+-  Variability: $\sigma$ = ***1, 3, 5***;
+
+-  Skewness: $\alpha$ =***0, 5***;
+
+
+::: {style="font-size: 95%;"}
+
+For the total combination of $5 × 3 × 3 × 2 = 90$ conditions we generated $500$ sets of data on which we performed the analysis.
+
+:::
+
+
+
+## Results 
+
+We compared the two effect sizes on the following indexes of bias:
+
+- The **Absolute mean bias** (AMB)
+
+- The **Relative mean bias** (RMB)
+ 
+- The **Mean Square Error** (MSE)
+
+
+## Absolute Mean Bias
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+library( ggplot2 )
+
+ggplot( subset(BIAS,mu==0),
+       aes(x,values,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("absolute mean bias") +
+  scale_color_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 0) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+
+```
+
+## Absolute Mean Bias
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+ggplot( subset(BIAS,mu==2),
+       aes(x,values,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("absolute mean bias") + 
+  scale_color_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 2) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+```
+
+## Relative mean bias
+
+```{r}
+
+Yr <- stack(ALL[,c("rbias_cles","rbias_eta")])
+Yr$n <- factor(ALL$n)
+Yr$mu <- factor(ALL$mu)
+Yr$sigma <- factor(ALL$sigma)
+Yr$alpha <- factor(ALL$alpha)
+Yr$true_eta <- ALL$true_overlap
+Yr$true_d <- ALL$true_d
+
+RBIAS <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Yr, mean )
+RBIAS$x <- as.numeric(BIAS$n)
+RBIAS$ind <- factor(RBIAS$ind, levels = c("rbias_eta","rbias_cles"))
+
+```
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+ggplot(subset(RBIAS,mu==0),
+       aes(x,values,color=ind,shape=ind)) + 
+  facet_grid(alpha~sigma) + 
+  geom_hline(yintercept = c(-.1,.1), lty = 2) + 
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("relative mean bias")  + 
+  scale_color_discrete(
+    labels = c("rbias_eta" = "eta", "rbias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("rbias_eta" = "eta", "rbias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(RBIAS$x),
+                     labels = levels(RBIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 0) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+
+
+```
+
+
+## Relative mean bias
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+ggplot(subset(RBIAS,mu==2),
+       aes(x,values,color=ind,shape=ind)) + 
+  facet_grid(alpha~sigma) + 
+  geom_hline(yintercept = c(-.1,.1), lty = 2) + 
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("relative mean bias")  + 
+  scale_color_discrete(
+    labels = c("rbias_eta" = "eta", "rbias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("rbias_eta" = "eta", "rbias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(RBIAS$x),
+                     labels = levels(RBIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 2) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+
+```
+
+## Mean Square Error
+
+```{r}
+
+BIAS$bias2 <- BIAS$values^2
+BIAS$MSE <- with( BIAS, V + bias2 )
+
+```
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+ggplot( subset(BIAS,mu==0),
+       aes(x,MSE,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("mean square error") +
+  scale_color_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 0) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+
+```
+
+
+## Mean Square Error
+
+```{r, fig.width=8,fig.height=5,fig.align="center"}
+ggplot( subset(BIAS,mu==2),
+       aes(x,MSE,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("mean square error") +
+  scale_color_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_shape_discrete(
+    labels = c("bias_eta" = "eta", "bias_cles" = "cles")
+  ) +
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(delta == 2) ) +
+  theme(
+    legend.title = element_blank(),
+    text = element_text(size = 16),         # base size for all text
+    axis.title = element_text(size = 18),   # axis titles
+    # axis.text = element_text(size = 14),    # axis tick labels
+    # strip.text = element_text(size = 16),   # facet labels
+    legend.text = element_text(size = 16),  # legend labels
+    plot.title = element_text(size = 20, face = "bold") # title
+  )
+
+```
+
+## Discussion
+
+The Overlapping index presents less Relative Mean Bias (RMB) compared to the CLES in conditions with no homogeneity of variance between the two groups.
+
+\
+
+**Next Steps**
+
+We will compare the Overlapping Index to other Effect Sizes but the problem of differences in scale needs to be solved.
+
+\
+
+::: {style="text-align: center;"}
+
+**Suggestions?**
+
+:::
+
+
+
+## Results {.smaller}
+
+We compared the two effect sizes on the following indexes of bias:
+
+- The ***Absolute mean bias*** (AMB): obtained as the mean of the absolute bias: $1/B\sum_b (\hat{\theta}_{bj}-\theta_j)$ in which $\theta_j$ is the value in the condition $j$ and $\hat{\theta}_{bj}$ the one estimated in the replication $b$ in the condition $j$.
+
+- The ***Relative mean bias*** (RMB): obtained as the mean of relative bias: $1/B\sum_b (\hat{\theta}_{bj}-\theta_j)/\theta_j$. Relative bias included between -0.1 and 0.1 are considered acceptable. 
+ 
+- The ***Mean Square Error*** (MSE), defined as  $\sigma_j^2 + [1/B \sum_b  (\hat{\theta}_{bj}-\theta_j)]^2$, with $\sigma_j^2$ being the variance of the estimates across replications. The lower the MSE, the closer is forecast to actual.
+
+
+## The Skew-Normal
+
+
+![](img/skewnorm.png)
+
+
+## Scenarios {.unlisted}
+
+![](img/scenarios.png)
+
+
+

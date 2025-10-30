@@ -1,0 +1,249 @@
+---
+format: 
+  html:
+    self-contained-math: true
+    title-block: custom
+    crossref:
+      fig-title: "Figura"
+      fig-prefix: "Figura"
+editor: source
+---
+
+
+::: {.title-block}
+# Overlapping: simulazione AIP
+Massimiliano Pastore
+
+```{r,echo=FALSE}
+cat(format(Sys.Date()),"\n")
+```
+:::
+
+
+```{r, include=FALSE}
+
+library(knitr)
+opts_chunk$set(fig.width=3,fig.height=3,echo=TRUE,fig.lp="fig:",fig.align='center',prompt=FALSE,comment=NA,message=FALSE,fig.pos="!t",results="hide", cache=TRUE)
+
+```
+
+
+```{r init, echo=FALSE}
+rm(list=ls())
+INIZIO <- Sys.time()
+# +++++++++++++++++++++++++++++++++
+main <- "/Users/ambraperugini/Documents/Work/Conferences/Presentazioni/AIP_2025/"
+if (grepl("cox",Sys.info()["user"])) main <- gsub("~","~/MEGA",main)
+datadir <- paste(main,"data/",sep="")
+# KUtils::pulizia(paste(main,"knitr/",sep=""),c("Rnw","bib","Qmd","html")) 
+esegui <- FALSE
+SEED <- 1
+
+```
+
+```{r}
+sninvpar <- function( mu=0, sigma=1, xi=NULL, omega=NULL, alpha=0 ) {
+  if (is.null(omega)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    omega2 <- sigma^2 / ( 1 - (2*delta^2) / pi )
+    omega <- sqrt( omega2 )
+  }
+  if (is.null(xi)) {
+    delta <- alpha/sqrt(1+alpha^2)
+    xi <- mu - omega * delta * sqrt( 2/pi )
+  }
+  return( list( xi = xi, omega = omega, alpha = alpha ) )
+}
+
+
+```
+
+```{r}
+
+load( paste0(datadir, "ALL.rda") )
+
+ALL$bias_cles <- with(ALL, cles - true_overlap ) 
+ALL$rbias_cles <- with( ALL, (cles - true_overlap)/true_overlap )
+
+
+```
+
+```{r}
+
+ALL$bias_eta <- ALL$bias_eta1
+ALL$rbias_eta <- ALL$rbias_eta1
+Y <- stack(ALL[,c("bias_eta","bias_cles")])
+Y$n <- factor(ALL$n)
+Y$mu <- factor(ALL$mu)
+Y$sigma <- factor(ALL$sigma)
+Y$alpha <- factor(ALL$alpha)
+Y$true_eta <- ALL$true_overlap
+
+MUSI <- data.frame( unique(Y[,c("mu","sigma","alpha")]) )
+MUSI$mu_num <- with( MUSI, as.numeric(levels(mu)[mu]))
+MUSI$sigma_num <- with( MUSI, as.numeric(levels(sigma)[sigma]))
+MUSI$alpha_num <- with( MUSI, as.numeric(levels(alpha)[alpha]))
+
+```
+
+
+```{r}
+BIAS <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Y, mean )
+BIAS$V <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Y, var )$values
+BIAS$x <- as.numeric(BIAS$n)
+
+```
+
+**Absolute mean bias**
+
+```{r, fig.width=6,fig.height=5}
+library( ggplot2 )
+
+ggplot( subset(BIAS,mu==0),
+       aes(x,values,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("absolute mean bias") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 0) )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot( subset(BIAS,mu==1),
+       aes(x,values,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("absolute mean bias") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 1) )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot( subset(BIAS,mu==2),
+       aes(x,values,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("absolute mean bias") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 2) )
+
+```
+
+**Relative mean bias**
+
+```{r}
+
+Yr <- stack(ALL[,c("rbias_cles","rbias_eta")])
+Yr$n <- factor(ALL$n)
+Yr$mu <- factor(ALL$mu)
+Yr$sigma <- factor(ALL$sigma)
+Yr$alpha <- factor(ALL$alpha)
+Yr$true_eta <- ALL$true_overlap
+Yr$true_d <- ALL$true_d
+
+RBIAS <- aggregate( values ~ ind+n+mu+sigma+alpha, data = Yr, mean )
+RBIAS$x <- as.numeric(BIAS$n)
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot(subset(RBIAS,mu==0),
+       aes(x,values,color=ind,shape=ind)) + 
+  facet_grid(alpha~sigma) + 
+  geom_hline(yintercept = c(-.1,.1), lty = 2) + 
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("relative mean bias") + 
+  scale_x_continuous(breaks = unique(RBIAS$x),
+                     labels = levels(RBIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 0) )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot(subset(RBIAS,mu==1),
+       aes(x,values,color=ind,shape=ind)) + 
+  facet_grid(alpha~sigma) + 
+  geom_hline(yintercept = c(-.1,.1), lty = 2) + 
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("relative mean bias") + 
+  scale_x_continuous(breaks = unique(RBIAS$x),
+                     labels = levels(RBIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 1) )
+
+```
+
+
+```{r, fig.width=6,fig.height=5}
+ggplot(subset(RBIAS,mu==2),
+       aes(x,values,color=ind,shape=ind)) + 
+  facet_grid(alpha~sigma) + 
+  geom_hline(yintercept = c(-.1,.1), lty = 2) + 
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("relative mean bias") + 
+  scale_x_continuous(breaks = unique(RBIAS$x),
+                     labels = levels(RBIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 2) )
+
+```
+
+**Mean Square Error**
+
+```{r}
+
+BIAS$bias2 <- BIAS$values^2
+BIAS$MSE <- with( BIAS, V + bias2 )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot( subset(BIAS,mu==0),
+       aes(x,MSE,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("mean square error") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 0) )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot( subset(BIAS,mu==1),
+       aes(x,MSE,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("mean square error") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 1) )
+
+```
+
+```{r, fig.width=6,fig.height=5}
+ggplot( subset(BIAS,mu==2),
+       aes(x,MSE,color=ind,shape=ind)) + facet_grid(alpha~sigma) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_point() + geom_line() + 
+  xlab("sample size") + 
+  ylab("mean square error") + 
+  scale_x_continuous(breaks = unique(BIAS$x),labels = levels(BIAS$n)) + 
+  theme(legend.title = element_blank()) + 
+  ggtitle( bquote(mu == 2) )
+
+```

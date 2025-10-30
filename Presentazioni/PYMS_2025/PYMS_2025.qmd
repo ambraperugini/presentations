@@ -1,0 +1,844 @@
+---
+title: "Set up for a Methodological Review Board in Psychology at the University of Padova"
+authors: "L. Sità, M. Manente, A. Perugini, G. Calignano, E. Toffalini, I. Alfarone, T. Marci, M. Pastore, G. Altoè"
+format: 
+  revealjs:
+    center: true
+    logo: "Psicostat_LOGO.png"
+    embed-resources: true
+    slide-number: true
+    toc: true
+    toc-title: "Content"
+    footer: "PYMS June 5th 2025 - ambra.perugini@phd.unipd.it"
+    theme: simple
+cache: true
+include-in-header:
+  - text: |
+      <style>
+      #title-slide .title {
+        font-size: 2em;
+        color: #9B0014;
+      }
+      .slide-logo {
+        height: 60px !important;
+        max-height: none !important;
+        position: absolute !important;
+        bottom: 10px !important;
+        right: 10px !important;
+        top: unset !important;
+        left: unset !important;
+      }
+      </style>
+
+---
+
+
+
+```{r setup}
+#| echo: false
+rm(list= ls())
+library(here)
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library (patchwork)
+library(tm)
+library(wordcloud)
+library(jcolors)
+
+######################################## Importazione Dataset
+
+dataMRB <- read_excel(here("/Users/ambraperugini/Documents/Work/Conferences/Presentazioni/PYMS_2025/dati.xlsx"))
+dataMRB <- data.frame(dataMRB)
+
+######################################## DATACLEANING
+
+## 1.1. Eliminazione di righe == preview (compilazioni pre-15 aprile), 
+## questionari non completi
+## prime due righe ridondanti
+
+datacleaned <- dataMRB[-(c(1:12, 62, 67)), -(c(2:6,8:17))]
+datacleaned <- datacleaned [datacleaned$Finished == "True",]
+
+## Rinominazione degli item ID
+
+item_renamed <- matrix(data = c("Start date", "Finished", 1, 2.1, 2.2, 2.3, 2.4,
+                                2.5, 3, 4, 5, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6,
+                                6.7, 7.1, 7.2, 7.3, 8.1, 8.2, 8.3, 8.4, 8.5, 
+                                8.6, 9.1, 9.2, 9.3, 10.1, 10.2, 10.3, 10.4,
+                                10.5, 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 
+                                13.2, 13.3, 13.4, 13.5, 14, 15, 16
+                                ), 1, 48)
+
+colnames(datacleaned) <- as.character(datacleaned[1, ])  # Set first row as column names
+colnames(datacleaned) <- item_renamed
+
+## Rinominazione righe
+# row_renamed <- matrix(data = c(1:53), nrow = 53, ncol = 1)
+# rownames(datacleaned) <- as.character(datacleaned[,1])
+# rownames (datacleaned) <- row_renamed
+
+for (i in 22:27) {
+datacleaned[[i]] <- ifelse(datacleaned[[i]] == "No, mai", "No, never", ifelse(datacleaned[[i]] == "Sì, ma non l'ho gestito personalmente", "Yes, but I didn't handle it personally", ifelse(datacleaned[[i]] == "Sì, l'ho gestito personalmente", "Yes, I handled it personally",datacleaned[[i]])  ))
+}
+
+
+######################################## FUNZIONI DESCRITTIVE AGGREGATE
+
+## Funzione per plot frequenze
+require(ggplot2)
+
+plot_frequenze <- function(colonna, titolo) {
+  
+  datacleaned[[colonna]] <- ifelse(datacleaned[[colonna]] == "Sì", "Yes",
+                                   datacleaned[[colonna]])
+  
+  dati_filtrati <- datacleaned[!is.na(datacleaned[[colonna]]), ]
+  
+  if (nrow(dati_filtrati) == 0) {
+    warning("Nessun dato disponibile per il grafico.")
+    return(NULL)
+  }
+  
+  freq_table <- as.data.frame(table(Risposta = dati_filtrati[[colonna]]))
+  colnames(freq_table)[2] <- "Frequenza"
+  freq_table$Percentuale <- (freq_table$Frequenza / sum(freq_table$Frequenza)) * 100
+  N <- sum(freq_table$Frequenza)
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale)) +
+    geom_col(width = 0.7, fill = "#4682B4", show.legend = FALSE) +
+    geom_text(aes(label = paste0("n=", Frequenza)), vjust = -0.4, size = 4.5) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", N),
+      x = "Response",
+      y = "Percentage"
+    ) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+## Funzione per likert "Per niente-Molto"
+
+plot_likert_molto <- function(colonna, titolo) {
+  dati <- datacleaned[[colonna]]
+
+  mappa_likert <- c(
+    "Per niente" = "Not at all", "per niente" = "Not at all",
+    "Poco" = "Not much", "poco" = "Not much",
+    "Abbastanza" = "A bit", "abbastanza" = "A bit",
+    "Molto" = "Very much", "molto" = "Very much"
+  )
+  
+  dati_raggruppati <- mappa_likert[as.character(dati)]
+  dati_raggruppati <- dati_raggruppati[!is.na(dati_raggruppati) & dati_raggruppati != ""]
+  
+  livelli_ordinati <- c("Not at all", "Not much", "A bit", "Very much")
+  dati_fattore <- factor(dati_raggruppati, levels = livelli_ordinati, ordered = TRUE)
+  
+  freq_table <- as.data.frame(table(Risposta = dati_fattore))
+  colnames(freq_table)[2] <- "Frequenza"
+  freq_table$Percentuale <- (freq_table$Frequenza / sum(freq_table$Frequenza)) * 100
+  N <- sum(freq_table$Frequenza)
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale)) +
+    geom_col(width = 0.7, fill = "#4682B4", show.legend = FALSE) +
+    geom_text(aes(label = paste0("n=", Frequenza)), vjust = -0.4, size = 5.2) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", N),
+      x = "Response",
+      y = "Percentage"
+    ) +
+    scale_x_discrete(drop = FALSE, limits = livelli_ordinati) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 15) +
+    theme(
+      plot.title = element_text(face = "bold", size = 17, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+
+## Funzione likert "Per niente-Completamente"
+
+plot_likert_completamente <- function(colonna, titolo) {
+  dati <- datacleaned[[colonna]]
+
+  mappa_likert_1 <- c(
+    "Per niente" = "Not at all", "per niente" = "Not at all",
+    "Poco" = "Not much", "poco" = "Not much",
+    "Abbastanza" = "A bit", "abbastanza" = "A bit",
+    "Completamente" = "Completely", "completamente" = "Completely"
+  )
+
+  dati_raggruppati <- mappa_likert_1[as.character(dati)]
+  dati_raggruppati <- dati_raggruppati[!is.na(dati_raggruppati) & dati_raggruppati != ""]
+  
+  livelli_ordinati <- c("Not at all", "Not much", "A bit", "Completely")
+  dati_fattore <- factor(dati_raggruppati, levels = livelli_ordinati, ordered = TRUE)
+
+  freq_table <- as.data.frame(table(Risposta = dati_fattore))
+  colnames(freq_table)[2] <- "Frequenza"
+  freq_table$Percentuale <- (freq_table$Frequenza / sum(freq_table$Frequenza)) * 100
+  N <- sum(freq_table$Frequenza)
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale)) +
+    geom_col(width = 0.7, fill = "#4682B4", show.legend = FALSE) +
+    geom_text(aes(label = paste0("n=", Frequenza)), vjust = -0.4, size = 5.2) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", N),
+      x = "Response",
+      y = "Percentage"
+    ) +
+    scale_x_discrete(drop = FALSE, limits = livelli_ordinati) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 15) +
+    theme(
+      plot.title = element_text(face = "bold", size = 17, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+
+######################################## FUNZIONI DESCRITTIVE DISAGGREGATE
+
+
+## Rinominare gruppi Strutturati e Non-strutturati
+datacleaned$Gruppo <- ifelse(datacleaned$"1" %in% c("PO, PA, RTD, RTT"), "Tenure track",
+                             ifelse(datacleaned$"1" %in% c("Dottorato, assegno di ricerca"), "ECRs", NA))
+
+
+## Funzione per grafico tasso di risposta
+plot_tasso_risposta <- function(totali_strutturati, totali_non_strutturati, titolo = "") {
+  
+  # Calcolo delle risposte ricevute per ciascun gruppo
+  risposte_strutturati <- sum(datacleaned$Gruppo == "Tenure track", na.rm = TRUE)
+  risposte_non_strutturati <- sum(datacleaned$Gruppo == "ECRs", na.rm = TRUE)
+  
+  # Creazione del dataframe per il grafico
+  df <- data.frame(
+    Gruppo = c("Tenure track", "ECRs"),
+    Risposte = c(risposte_strutturati, risposte_non_strutturati),
+    Totali = c(totali_strutturati, totali_non_strutturati)
+  )
+  
+  # Calcolo del tasso di risposta
+  df$Percentuale <- (df$Risposte / df$Totali) * 100
+  
+  # Creazione del grafico
+  ggplot(df, aes(x = Gruppo, y = Percentuale, fill = Gruppo)) +
+    geom_col(width = 0.7) +
+    geom_text(aes(label = paste0("n=", Risposte)), vjust = -0.4, size = 4.5) +
+    labs(
+      title = titolo,
+      subtitle = paste("Total: Tenure track =", totali_strutturati, ", ECRs =", totali_non_strutturati),
+      x = "Group",
+      y = "Percentage of response"
+    ) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5), limits = c(0, 100)) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+## Funzione per visualizzazione dati disaggregati (dicotomiche)
+
+plot_confronto_gruppi <- function(colonna, titolo) {
+  
+    datacleaned[[colonna]] <- ifelse(datacleaned[[colonna]] == "Sì", "Yes",
+                                   datacleaned[[colonna]])
+
+  datacleaned$Gruppo <- ifelse(datacleaned$"1" %in% c("PO, PA, RTD, RTT"), "Tenure Track",
+                               ifelse(datacleaned$"1" %in% c("Dottorato, assegno di ricerca"), "ECRs", NA))
+
+  dati_filtrati <- datacleaned[!is.na(datacleaned[[colonna]]) & !is.na(datacleaned$Gruppo), ]
+  if (nrow(dati_filtrati) == 0) {
+    warning("Nessun dato disponibile per il grafico.")
+    return(NULL)
+  }
+
+  freq_table <- as.data.frame(table(Risposta = dati_filtrati[[colonna]], Gruppo = dati_filtrati$Gruppo))
+  colnames(freq_table)[3] <- "Frequenza"
+
+  totali <- aggregate(Frequenza ~ Gruppo, data = freq_table, sum)
+  freq_table <- merge(freq_table, totali, by = "Gruppo", suffixes = c("", "_Totale"))
+  freq_table$Percentuale <- (freq_table$Frequenza / freq_table$Frequenza_Totale) * 100
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale, fill = Gruppo)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    geom_text(aes(label = paste0("n=", Frequenza)),
+              position = position_dodge(width = 0.8), vjust = -0.4, size = 4.5) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", sum(freq_table$Frequenza)),
+      x = "Response",
+      y = "Percentage",
+      fill = "Gruppo"
+    ) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+## Funzione per dati disaggregati - Likert "Per niente-Molto"
+
+plot_likert_gruppi_molto <- function(colonna, titolo) {
+  datacleaned$Gruppo <- ifelse(datacleaned$"1" %in% c("PO, PA, RTD, RTT"), "Tenure track",
+                               ifelse(datacleaned$"1" %in% c("Dottorato, assegno di ricerca"), "ECRs", NA))
+
+  mappa_likert <- c(
+    "Per niente" = "Not at all", "per niente" = "Not at all",
+    "Poco" = "Not much", "poco" = "Not much",
+    "Abbastanza" = "A bit", "abbastanza" = "A bit",
+    "Molto" = "Very much", "molto" = "Very much"
+  )
+  livelli_ordinati <- c("Not at all", "Not much", "A bit", "Very much")
+
+  dati_filtrati <- datacleaned[!is.na(datacleaned[[colonna]]) & !is.na(datacleaned$Gruppo), ]
+  dati_filtrati$Risposta <- mappa_likert[as.character(dati_filtrati[[colonna]])]
+  dati_filtrati <- dati_filtrati[!is.na(dati_filtrati$Risposta) & dati_filtrati$Risposta != "", ]
+  dati_filtrati$Risposta <- factor(dati_filtrati$Risposta, levels = livelli_ordinati, ordered = TRUE)
+
+  freq_table <- as.data.frame(table(dati_filtrati$Risposta, dati_filtrati$Gruppo))
+  colnames(freq_table) <- c("Risposta", "Gruppo", "Frequenza")
+
+  totali <- aggregate(Frequenza ~ Gruppo, data = freq_table, sum)
+  freq_table <- merge(freq_table, totali, by = "Gruppo", suffixes = c("", "_Totale"))
+  freq_table$Percentuale <- (freq_table$Frequenza / freq_table$Frequenza_Totale) * 100
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale, fill = Gruppo)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    geom_text(aes(label = paste0("n=", Frequenza)),
+              position = position_dodge(width = 0.8), vjust = -0.4, size = 5) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", sum(freq_table$Frequenza)),
+      x = "Response",
+      y = "Percentage",
+      fill = "Gruppo"
+    ) +
+    scale_x_discrete(drop = FALSE, limits = livelli_ordinati) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+
+## Funzione per dati disaggregati - Likert "Per niente-Completamente"
+
+plot_likert_gruppi_completamente <- function(colonna, titolo) {
+  datacleaned$Gruppo <- ifelse(datacleaned$"1" %in% c("PO, PA, RTD, RTT"), "Tenure track",
+                               ifelse(datacleaned$"1" %in% c("Dottorato, assegno di ricerca"), "ECRs", NA))
+
+  mappa_likert <- c(
+    "Per niente" = "Not at all", "per niente" = "Not at all",
+    "Poco" = "Not much", "poco" = "Not much",
+    "Abbastanza" = "A bit", "abbastanza" = "A bit",
+    "Completamente" = "Completely", "completamente" = "Completely"
+  )
+  livelli_ordinati <- c("Not at all", "Not much", "A bit", "Completely")
+
+  dati_filtrati <- datacleaned[!is.na(datacleaned[[colonna]]) & !is.na(datacleaned$Gruppo), ]
+  dati_filtrati$Risposta <- mappa_likert[as.character(dati_filtrati[[colonna]])]
+  dati_filtrati <- dati_filtrati[!is.na(dati_filtrati$Risposta) & dati_filtrati$Risposta != "", ]
+  dati_filtrati$Risposta <- factor(dati_filtrati$Risposta, levels = livelli_ordinati, ordered = TRUE)
+
+  freq_table <- as.data.frame(table(dati_filtrati$Risposta, dati_filtrati$Gruppo))
+  colnames(freq_table) <- c("Risposta", "Gruppo", "Frequenza")
+
+  totali <- aggregate(Frequenza ~ Gruppo, data = freq_table, sum)
+  freq_table <- merge(freq_table, totali, by = "Gruppo", suffixes = c("", "_Totale"))
+  freq_table$Percentuale <- (freq_table$Frequenza / freq_table$Frequenza_Totale) * 100
+
+  ggplot(freq_table, aes(x = Risposta, y = Percentuale, fill = Gruppo)) +
+    geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+    geom_text(aes(label = paste0("n=", Frequenza)),
+              position = position_dodge(width = 0.8), vjust = -0.4, size = 5) +
+    labs(
+      title = titolo,
+      subtitle = paste("N =", sum(freq_table$Frequenza)),
+      x = "Response",
+      y = "Percentage",
+      fill = "Gruppo"
+    ) +
+    scale_x_discrete(drop = FALSE, limits = livelli_ordinati) +
+    scale_y_continuous(breaks = seq(0, 100, by = 5)) +
+    theme_minimal(base_size = 13) +
+    theme(
+      plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+      axis.title.x = element_text(face = "bold"),
+      axis.title.y = element_text(face = "bold"),
+      plot.margin = margin(t = 20, r = 10, b = 10, l = 10)
+    )
+}
+
+```
+
+# Methodological Review Board (MRB)
+
+## Why the need for a MRB?
+
+- Need for a cultural shift towards better research practices, starting from our department ^[Department of Developmental and Social Psychology, University of Padova]
+
+- Lack of a review process in most pre-registrations
+
+- Increasing demand for transparency and Open Science
+
+
+## Project Goals
+
+**Establish a sustainable MRB by**:
+
+- Supporting clarity and transparency in pre-registration
+
+- Offering advisory methodological feedback
+
+- Maintaining impartiality (e.g., MRB members will not be listed as co-authors)
+
+- Encouraging Open Science practices
+
+## MRB characteristics 
+
+- Voluntary submission to the MRB
+
+- Advisory only, not gate-keeping
+
+- Diverse expert reviewers (Statisticians, Psychometricians, Experts of the specific Psychological field)
+
+- Not a tailored revision of the project, more of a quality check (i.e., sample size justification, clear hypothesis, planned data analysis)
+
+
+## The MRB Workflow
+
+1. Authors identify an appropriate pre-registration template (e.g. OSF)
+
+2. Authors complete the chosen template and submit it to the MRB
+
+3. Review and Feedback (multiple rounds if needed)
+
+4. Pre-registration Submission
+
+5. Final Check and Badge Award (if standards are met)
+
+## Long-Term Impact Goals
+
+- Monitor change in pre-registration rates among published studies over time
+
+- Success will be defined as exceeding a 10% pre-registration rate among eligible studies within the first two years
+
+- Promoting a culture of preregistration, transparency, open science and and fostering better research practices
+
+# The Survey
+
+## Department insight
+
+- Attitudes toward preregistration and Open Science
+
+- Perceived usefulness and feasibility of MRB
+
+- Differences between Early Career Researchers (ECRs) and Tenure Track faculty members.
+
+
+## Response rate
+
+Total respondents: 53 out of `r 65+77`  (representing approximately `r round(53/(65+77)*100,0)`\% of the department’s academic staff).
+
+- Tenure-track: 31 out of 65
+
+- ECRs: 22 out of 77
+
+BIAS?
+
+## Have you ever heard about the replicability crisis? {.unlisted}
+
+```{r scr4a}
+plot_frequenze("4", "")
+```
+
+## Have you ever heard about the replicability crisis? {.unlisted}
+
+```{r scr4b}
+plot_confronto_gruppi("4", "")
+```
+
+## If so, do you think it's a problem for scientific progress? {.unlisted}
+
+```{r scr5a}
+plot_frequenze("5", "")
+```
+
+## If so, do you think it's a problem for scientific progress? {.unlisted}
+
+```{r scr5b}
+
+plot_confronto_gruppi("5", "")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.1a}
+plot_likert_molto("6.1", "Outdated methods")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.1b}
+plot_likert_gruppi_molto("6.1", "Outdated methods")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.2a}
+plot_likert_molto("6.2", "Poor data quality")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.2b}
+plot_likert_gruppi_molto("6.2", "Poor data quality")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.3a}
+plot_likert_molto("6.3", "Lack of external validity")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.3b}
+plot_likert_gruppi_molto("6.3", "Lack of external validity")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.4a}
+plot_likert_molto("6.4", "Lack of internal validity")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.4b}
+plot_likert_gruppi_molto("6.4", "Lack of internal validity")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.5a}
+plot_likert_molto("6.5", "Publication Bias ")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.5b}
+plot_likert_gruppi_molto("6.5", "Publication Bias")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.6a}
+plot_likert_molto("6.6", "DoF of the Researcher")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.6b}
+plot_likert_gruppi_molto("6.6", "DoF of the Researcher")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.7a}
+plot_likert_molto("6.7", "Fraud ")
+```
+
+## How much do you think those are the causes? {.unlisted}
+
+```{r scr6.7b}
+plot_likert_gruppi_molto("6.7", "Fraud")
+```
+
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.1a}
+plot_frequenze("7.1", "Pre-registration of Hypotheses")
+```
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.1b}
+plot_confronto_gruppi("7.1", "Pre-registration of Hypotheses")
+```
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.2a}
+plot_frequenze("7.2", "Pre-registration of Analyses")
+```
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.2b}
+plot_confronto_gruppi("7.2", "Pre-registration of Analyses")
+```
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.3a}
+plot_frequenze("7.3", "Registered Report ")
+```
+
+## Have you ever heard of those practices? {.unlisted}
+
+```{r os7.3b}
+plot_confronto_gruppi("7.3", "Registered Report")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.1a}
+plot_frequenze("8.1", "Pre-registration of Hypotheses")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.1b}
+plot_confronto_gruppi("8.1", "Pre-registration of Hypotheses")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.2a}
+plot_frequenze("8.2", "Pre-registration of Analyses")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.2b}
+plot_confronto_gruppi("8.2", "Pre-registration of Analyses")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.3a}
+plot_frequenze("8.3", "Registered Report ")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.3b}
+plot_confronto_gruppi("8.3", "Registered Report")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.4a}
+plot_frequenze("8.4", "Open Materials ")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.4b}
+plot_confronto_gruppi("8.4", "Open Materials")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.5a}
+plot_frequenze("8.5", "Open Code ")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.5b}
+plot_confronto_gruppi("8.5", "Open Code")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.6a}
+plot_frequenze("8.6", "Open Data ")
+```
+
+## Have you ever used those practices? {.unlisted}
+
+```{r os8.6b}
+plot_confronto_gruppi("8.6", "Open Data")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.1a}
+plot_likert_molto("9.1", "Pre-registration of Hypotheses")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.1b}
+plot_likert_gruppi_molto("9.1", "Pre-registration of Hypotheses")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.2a}
+plot_likert_molto("9.2", "Pre-registration of Analyses")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.2b}
+plot_likert_gruppi_molto("9.2", "Pre-registration of Analyses")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.3a}
+plot_likert_molto("9.3", "Registered Report ")
+```
+
+## Can those practices contribute to the progress of the discipline? {.unlisted}
+
+```{r os9.3b}
+plot_likert_gruppi_molto("9.3", "Registered Report")
+```
+
+
+## If you decided to pre-register a study, would you need help? {.unlisted}
+
+```{r mrb12.1a}
+plot_likert_completamente("12.1", "")
+```
+
+## If you decided to pre-register a study, would you need help? {.unlisted}
+
+```{r mrb12.1b}
+plot_likert_gruppi_completamente("12.1", "")
+```
+
+## If you decided to pre-register a study, would you feel more confident after consulting the MRB? {.unlisted}
+
+
+```{r mrb12.2a}
+plot_likert_completamente("12.2", "")
+```
+
+## If you decided to pre-register a study, would you feel more confident after consulting the MRB? {.unlisted}
+
+```{r mrb12.2b}
+plot_likert_gruppi_completamente("12.2", "")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.1a}
+plot_likert_completamente("13.1", "Being a methodological point of reference")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.1b}
+plot_likert_gruppi_completamente("13.1", "Being a methodological point of reference")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.2a}
+plot_likert_completamente("13.2", "Promoting collaboration")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.2b}
+plot_likert_gruppi_completamente("13.2", "Promoting collaboration")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.3a}
+plot_likert_completamente("13.3", "Preventing waste")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.3b}
+plot_likert_gruppi_completamente("13.3", "Preventing waste")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.4a}
+plot_likert_completamente("13.4", "Improving research quality")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.4b}
+plot_likert_gruppi_completamente("13.4", "Improving research quality")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.5a}
+plot_likert_completamente("13.5", "Promoting good practices")
+```
+
+## How much would a MRB be useful for: {.unlisted}
+
+```{r mrb13.5b}
+plot_likert_gruppi_completamente("13.5", "Promoting good practices")
+```
+
+## To wrap up {.smaller}
+
+- ECRs tended to attribute greater importance to the possible causes of the replication crisis
+
+- Most respondents were familiar with Open Science practices
+
+- Open materials and open data were used more frequently than pre-registration of hypotheses or analyses.
+
+- Overall, most researchers felt that these practices are important 
+
+- Not everyone expressed a need for a MRB, but many indicated interest and potential willingness to engage with it.
+
+## Time for Feedback! 
+
+- How could we improve people's interest in the MRB?
+
+- What incentives can be given to reviewers?
+
+- Should going through the MRB be mandatory?
+
+- If so, how can it be implemented without researchers feeling threatened? 
+

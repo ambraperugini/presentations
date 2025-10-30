@@ -1,0 +1,347 @@
+---
+title: Critical effect size values and why to report them
+institute: "\\ XXXVI Congresso Nazionale Associazione Italiana di Psicologia \\ Sezione Psicologia dello Sviluppo e dell’Educazione 19 - 21 Settembre 2024 | Cagliari"
+
+author:
+  - name: Ambra Perugini
+    affiliations:
+       - id: dpss
+         name: Department of Developmental and Social Psychology, University of Padova, Italy
+
+  - name: Filippo Gambarota
+    affiliations:
+       - id: dpg
+         name: Department of General Psychology, University of Padova, Italy
+format: 
+  quarto-slides-revealjs:
+    slide-number: true
+    incremental: false
+    code-link: true
+    code-line-numbers: false
+    html-math-method: mathjax
+    margin: 0
+    filters:
+      - nutshell
+      - code-fullscreen
+from: markdown+emoji
+final-slide: true
+df-print: default
+bibliography: "`r filor::fil()$bib`"
+csl: "`r filor::fil()$csl`"
+toc: true
+toc-title: Contents
+toc-depth: 1
+engine: knitr
+---
+
+```{r}
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(echo = TRUE,
+                      dev = "svg",
+                      fig.width = 7,
+                      fig.asp = 0.618,
+                      fig.align = "center",
+                      comment = "#>")
+```
+
+```{r}
+#| label: packages
+#| include: false
+library(gt)
+library(ggplot2)
+library(viridis)
+```
+
+```{r}
+#| label: ggplot2
+#| include: false
+mtheme <- function(size = 15){
+  theme_minimal(base_size = size, 
+                base_family = "sans") +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(face = "bold"),
+        panel.grid.minor = element_blank())
+}
+
+theme_set(mtheme())
+
+# palettes
+options(ggplot2.continuous.colour="viridis")
+options(ggplot2.continuous.fill = "viridis")
+scale_colour_discrete <- scale_colour_viridis_d
+scale_fill_discrete <- scale_fill_viridis_d
+```
+
+```{r}
+#| label: gt
+#| include: false
+qtab <- function(data, digits = 3){
+  data |> 
+    gt() |> 
+    gt::cols_align(align = "center") |> 
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_column_labels()
+    ) |> 
+    fmt_number(decimals = digits)
+}
+```
+
+## Iniziamo con un esempio
+
+-   Non abbiamo trovato una correlazione positiva tra la variabile X e la variabile Y ($n = 18$ , $r = .40$, $p = .100$)
+
+-   Abbiamo trovato una correlazione positiva tra la variabile X e la variabile Y ($n = 1000$, $r = .08$, $p = .011$)
+
+
+## Pensiamo ai critical effect size values
+
+- Nel primo caso la correlazione non era significativa ma il critical effect size value è un $r = ±.468$, ma una correlazione di .30 non avrebbe comunque rilevanza?
+
+- Nel secondo caso il critical effect size value corrisponde a $r = ±.0.062$, un effetto così piccolo da essere quasi triviale, in tal caso ragionare sulla significatività dei risultati può essere poco rilevante.
+
+## Facciamo un passo in dietro:
+
+Cosa sono esattamente i valori critici?
+
+![](img/nhst.png)
+
+
+In questo caso risulta difficile comprendere a cosa corrisponde in pratica il valore critico
+
+## Proviamo a ragionare in termini di effect size:
+
+Trasformiamo ora il valore critico in valore critico dell'effect size
+
+```{r}
+
+#| echo: false
+#| results: markup
+#| warning: false
+
+library(ggplot2)
+library(grid)
+
+# nel mio caso m.inn è il trad e m.trad è inn
+m.inn<-114 ; sd.inn<-15 ; n.inn<-25
+m.trad<-100 ; sd.trad<-16 ; n.trad<-25
+df<-(n.inn+n.trad-2)
+#
+(obs_d <- (m.inn-m.trad) / sqrt( ( (n.inn-1)*sd.inn^2 +  (n.trad-1)*sd.trad^2 ) / (n.inn+n.trad-2) ) )
+(obs_t = obs_d / sqrt  ( (n.inn+n.trad) / (n.inn*n.trad) * (n.inn+n.trad) / (df) ))
+(obs_p=pt(-abs(obs_t),df)*2)
+#obs_d
+#[1] 0.9027562
+#> obs_t
+#[1] 3.127239
+#> obs_p
+#[1] 0.002995689
+#> df
+#[1] 48
+# 
+
+# funzione utile
+  dpsm <- function(d, ng, alpha=.05, n.sims=10000){
+    A=d
+    s=sqrt(2/ng)
+    df=ng*2-2
+    z <- qt(1-alpha/2, df)
+    p.hi <- 1 - pt(z-A/s, df)
+    p.lo <- pt(-z-A/s, df)
+    power <- p.hi + p.lo
+    typeS <- p.lo/power
+    estimate <- A + s*rt(n.sims,df)
+    significant <- abs(estimate) > s*z
+    exaggeration <- mean(abs(estimate)[significant])/A
+    return(list(power=power, typeS=typeS, exaggeration=exaggeration, 
+                s=s, z=z))
+  }
+power<-function(x) {
+      y<-dnorm(x, mean = d, sd = result$s)
+      y[x>(-result$s*result$z) & x < result$s*result$z]<-NA
+      return(y)}
+
+
+result<-dpsm(.2, 25)
+
+d<-.20
+lab1="Rifiuto $H_0$"
+grob1.1 <- grobTree(textGrob("Reject $H_0$", x=.76,  y=0.4+.1, hjust=0,
+  gp=gpar(col="blue", fontsize=13)))
+grob1.2 <- grobTree(textGrob("Reject $H_0$", x=.1-.05,  y=0.4+.1, hjust=0,
+  gp=gpar(col="blue", fontsize=13)))
+grob1.3 <- grobTree(textGrob("Not reject $H_0$", x=.35+.02,  y=0.4+.1, hjust=0,
+  gp=gpar(col="blue", fontsize=13)))
+
+ggplot(data.frame(x = c(-1.25, 1.5)), aes(x = x)) +
+      stat_function(fun = dnorm, args = list(mean = 0, sd = result$s),
+                    aes(linetype = "$H_0$"), size = 1.1, n=1000)+
+      #stat_function(fun = dnorm, args = list(mean = d, sd = result$s),
+      #              aes(linetype="$H_1$"), size = 1.1,n=1000)+
+      #scale_linetype_manual(values=c("solid", "dotted"))+
+      scale_linetype_manual(values=c("solid")) +
+      scale_x_continuous(breaks=seq(-1,1.2, by=.20),name = "Cohen's \\textit{d}") +
+      scale_y_continuous(name = "Probability Density")+
+      labs(linetype = "Hypothesis")+
+      geom_segment(aes( x=-result$s*result$z, xend=-result$s*result$z,
+                        y=0, yend=dnorm(d, mean = d, sd = result$s)),color="blue",linetype="dotted",size=2)+
+      geom_segment(aes( x=result$s*result$z, xend=result$s*result$z,
+                        y=0, yend=dnorm(d, mean = d, sd = result$s)),color="blue",linetype="dotted",size=2)+
+      
+      #geom_segment(aes( x=c(-result$s*result$z,result$s*result$z),
+      #                  xend=c(-result$s*result$z,result$s*result$z),
+      #                  y=c(0,0),
+      #                  yend=c(dnorm(-result$s*result$z, mean = 0, sd = result$s),
+      #                        dnorm(result$s*result$z, mean = 0, sd = result$s))))+
+      #geom_segment(aes(x=result$s*result$z, xend=result$s*result$z,
+      #                 y=dnorm(result$s*result$z, mean = 0, sd = result$s),
+      #                 yend=dnorm(result$s*result$z, mean = d, sd = result$s)))+
+      #geom_segment(aes( x=d, xend=d,
+                      #  y=0, yend=dnorm(d, mean = d, sd = result$s)),
+                   #linetype=2, col="black")+
+      theme(#axis.title.y = element_blank(),
+            #axis.line.y = element_blank(),
+            axis.text.y = element_blank(),
+            #axis.ticks.y = element_blank(),
+            text=element_text(size=14),
+            legend.position.inside = c(.9,.8),legend.key.width = unit(1, "cm")) +
+            annotation_custom(grob1.1) + annotation_custom(grob1.2) + annotation_custom(grob1.3)+
+      #       annotate(geom = "segment",
+      # x = 0.902, 
+      # y = .4,
+      # xend = 0.902, 
+      # yend = 0.1,
+      # colour = "red",
+      # arrow = arrow(length = unit(0.3, "cm"), type = "closed"))+
+      labs(caption="\\textit{critical level of significance $=.05$}")
+      #stat_function(fun=power, geom="area", fill="#84CA72", alpha=0.2,n=1000)
+
+```
+
+
+Ora risulta più chiaro cosa rappresenta in termini più concreti la significatività di tale valore.
+
+## Vediamo come calcolare i critical effect size values
+
+Il nostro pacchetto permette di calcolare i valori critici per correlazione, confronti tra gruppi, regressione lineare e meta-analisi.
+
+::: panel-tabset
+
+### Codice
+
+```{r}
+#| echo: true
+#| results: hide
+#| 
+library(criticalESvalue)
+
+n <- 30
+
+critical_t2sp(n = n, conf.level = 0.95, hypothesis = "two.sided")
+```
+
+### Output
+
+```{r}
+#| echo: false
+#| results: markup
+#| warning: false
+
+n <- 30
+
+output <- critical_t2sp(n = n, conf.level = 0.95, hypothesis = "two.sided")
+
+output
+
+
+
+```
+:::
+
+## Per saperne di più:
+
+\
+
+::: {style="text-align: center;"}
+
+Il nostro pacchetto, esempi su come usare le funzioni e il draft del paper nella nostra repository:
+
+\
+
+[https://github.com/psicostat/criticalESvalue](https://github.com/psicostat/criticalESvalue){preview-link="true" style="text-align: center"}
+:::
+
+
+## Nella pratica, come ci aiutano i critical effect size values? {.smaller}
+
+**Prima di condurre uno studio:**
+
+-   aiutano i ricercatori a ragionare prima di condurre uno studio anche in casi in cui per motivi di risorse non si possa pianificare il sample size
+-   danno magiore consapevolezza nell'interpretare i risultati
+
+**Quando lo studio è già stato svolto:**
+
+-   aiutano i revisori a meglio contestualizzare i risultati 
+
+**In più..** 
+
+-   dal punto di vista didattico aiutano a comprendere meglio la relazione tra significatività statistica, grandezza del campione e effect size
+
+
+## In conclusione 
+
+-   Soprattutto quando condurre una design analisi $a priori$ non è possibile, i critical value riescono, senza specificare l'effetto plausibile, ad aiutare a comprendere i limiti del proprio disegno sperimentale
+
+-  Idealmente, sarebbe sempre meglio programmare il sample size tramite la formalizzazione di un effetto plausibile PRIMA di condurre lo studio.
+
+-   Il nostro motto è TBT:
+
+::: {style="text-align: center;"}
+Thinking Before Testing!
+:::
+
+## Take-home message {.smaller}
+
+
+-   Ora vi starete chiedendo:
+
+::: {style="text-align: left; margin-left: 2em; margin-top: -.5em"}
+... Come definire teoreticamente l'effect size e come interpretarlo?
+
+... come calcolare i critical effect size values per modelli complessi? 
+
+:::
+
+
+-   Il nostro suggerimento è COLLABORARE con più professionisti: psicologi, psicometristi e statistici
+
+
+::: {style="text-align: center;"}
+Un piccolo esempio di collaborazione: PSICOSTAT
+
+[http://psicostat.dpss.psy.unipd.it](http://psicostat.dpss.psy.unipd.it){preview-link="true" style="text-align: center"}
+:::
+
+<img src="img/logo_psicostat.png" style="width: 70px; float: right;"/>
+
+
+
+
+## Contatti:
+
+\
+
+\
+
+ambra.perugini$@$phd.unipd.it
+
+\
+
+[https://psicostat.dpss.psy.unipd.it/people.html](https://psicostat.dpss.psy.unipd.it/people.html){preview-link="true" style="text-align: center"}
+
+
+<img src="img/logo_psicostat.png" style="width: 20px; float: right;"/>
+
+

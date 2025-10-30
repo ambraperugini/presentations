@@ -1,0 +1,111 @@
+---
+title: "The FAIR Guiding Principles for scientific data management and stewardship"
+author: "Ambra Perugini"
+format: 
+  revealjs:
+    theme: simple
+    slide-number: true
+---
+
+
+# Why FAIR?
+
+- Growing demands for **transparency** and **reproducibility**
+- Data is often hard to find, access, interpret, or reuse
+- FAIR principles offer a structured solution
+
+> "FAIR = Findable, Accessible, Interoperable, Reusable"
+
+
+# Overview of FAIR
+
+- A set of guiding principles
+- Applicable across disciplines
+- Aiming at **machine-readability** and referring to **data stewardship**
+
+
+
+# Findable
+
+**Key ideas:**
+
+- Assign globally unique and persistent identifiers (PIDs)
+- Metadata should be rich and indexed in searchable resources
+
+**Example in practice:**
+
+- Use DOIs for datasets
+- Tag datasets with relevant keywords and metadata
+
+
+# Accessible
+
+**Key ideas:**
+
+- Use standardized protocols (e.g., HTTP)
+- Metadata remains accessible even if data is restricted
+
+**Example in practice:**
+
+- Publish metadata openly even if data is sensitive (e.g., clinical trials)
+- Use data repositories (e.g., OSF, Zenodo)
+
+
+# Interoperable
+
+**Key ideas:**
+
+- Use standardized vocabularies and formats
+- Data should interoperate with tools and other datasets
+
+**Example in practice:**
+
+- Store data in open formats (CSV, JSON)
+- Use standardized variable naming
+
+# Reusable
+
+**Key ideas:**
+
+- Clear data usage licenses
+- Rich metadata describing context, provenance
+
+**Example in practice:**
+
+- Add a Creative Commons license
+- Include documentation, codebooks, analysis scripts
+
+
+# FAIR in Psychology 
+
+- Improves **replicability** and **meta-analyses**
+- Facilitates **collaboration**
+- Encourages **better documentation** and data curation
+
+
+# First steps to become more FAIR
+
+- Use data repositories (e.g., OSF, Dataverse)
+
+- Adopt metadata standards (e.g., DDI, Dublin Core)
+
+- Publish protocols and code
+
+- Provide clear licenses
+
+# Where to start
+
+- [FAIRsharing.org](https://fairsharing.org/)
+
+- [Open Science Framework](https://osf.io/)
+
+- [Zenodo](https://zenodo.org/)
+
+- [Creative Commons Licenses](https://creativecommons.org/)
+
+---
+
+# Thank you!
+
+_Ambra Perugini_
+

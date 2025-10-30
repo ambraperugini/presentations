@@ -1,0 +1,25 @@
+\documentclass{article}
+\date{}
+\begin{document}
+
+
+\title{Do the areas overlap? An implementation of the Permutation Test on the Overlapping Index}
+\maketitle
+
+\begin{center}
+Ambra Perugini, Giulia Calignano, Massimo Nucci, Livio Finos, Massimiliano Pastore\\
+\end{center}
+
+\begin{center}
+Università degli Studi di Padova\\
+\end{center}
+
+\begin{large} 
+  Abstract:\\
+\end{large} 
+
+The present contribution presents the implementation of the permutation approach to the Overlapping Index and subsequently compares it to other commonly used indexes in Psychological Sciences. The Overlapping Index ($\eta$) is a non-parametric estimate of the area of overlap between two or more density distributions which varies from 0, when the two distributions are completely disjoint, and 1, when they completely overlap. The implementation of the permutation test allows to compute statistical significance for such index and the parameter of such test is formalized as $1-\eta = \zeta$, which will be called $\zeta$ perm. Through a Simulation study the $\zeta$ perm is compared to other commonly used tests (i.e. t-test, F-test, Kolmogorov-Smirnov test etc.) to evaluate control of type I error and power, which becomes particularly relevant in scenarios where test's assumptions are violated. The data is generated from a Skew-Normal for a total of 180 conditions and 3000 sets of data for each scenario. The $\zeta$ perm shows higher power compared to other tests, especially in cases of low sample size. This findings highlight the importance of choosing statistical methods that are resilient to the complexities inherent in psychological data, where assumption violations are often inevitable.
+
+
+
+\end{document}

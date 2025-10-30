@@ -1,0 +1,163 @@
+---
+title: Critical effect size values and why to report them
+author: Ambra Perugini, Filippo Gambarota, Enrico Toffalini, Laura Sità, Daniël Lakens, Massimiliano Pastore, Livio Finos, Psicostat, Gianmarco Altoè
+bibliography: bibliography.bib
+bibliographystyle: apa
+format:
+  revealjs: 
+    self-contained: true
+    theme: theme.scss
+execute: 
+  cache: true
+---
+
+## Let's start with an example {.smaller}
+
+-   We did not find a statistically significant correlation between “this” and “that” (n = 18 ,r = .40,p = .100, critical r = ±.468)
+
+-   We found a statistically significant correlation between “this” and “that” (n = 1000, r = .08,p = .011, critical r = ±.0.062)
+
+![](img/pparty.png)
+
+## What would change reasoning about critical effect size values: {.smaller}
+
+**Before conducting the study:**
+
+-   they suggest researchers to think/pre-plan before testing
+-   they increase researchers’ awareness in interpreting their results
+
+**After the study has been conducted**
+
+-   they help reviewers in evaluating research findings
+
+**Also..** 
+
+-   from a didactic perspective it helps better grasp the relationship between statistical significance, effect size and sample size
+
+
+## Implementation in R {.scrollable}
+
+We developed an r package that implements the computation of critical effect size values for correlation, groups comparison, linear regression and meta-analysis.
+
+::: panel-tabset
+### From data (code)
+
+```{r}
+#| echo: true
+#| results: hide
+
+library(criticalESvalue)
+library(psych)
+library(psychTools)
+data("holzinger.swineford")
+Holz <- holzinger.swineford
+tt <- t.test(Holz$t01_visperc [ Holz$female == 1], Holz$t01_visperc [ Holz$female == 2])
+critical(tt)
+```
+
+### From data (output)
+
+```{r}
+#| echo: false
+#| results: markup
+
+library(criticalESvalue)
+library(psych)
+library(psychTools)
+data("holzinger.swineford")
+Holz <- holzinger.swineford
+tt <- t.test(Holz$t01_visperc [ Holz$female == 1], Holz$t01_visperc [ Holz$female == 2])
+critical(tt)
+```
+
+### From sample size (code)
+
+```{r}
+#| echo: true
+#| results: hide
+
+m1 <- 10
+m2 <- 15
+sd1 <- 5
+sd2 <- 4.25
+n <- 30
+critical_t2sp(m1 = m1, m2 = m2, sd1 = sd1, sd2 = sd2, n = n)
+```
+
+### From sample size (output)
+
+```{r}
+#| echo: false
+#| results: markup
+
+m1 <- 10
+m2 <- 15
+sd1 <- 5
+sd2 <- 4.25
+n <- 30
+critical_t2sp(m1 = m1, m2 = m2, sd1 = sd1, sd2 = sd2, n = n)
+```
+:::
+
+## Take-home message (part I)
+
+-   Calculating and interpreting critical effect size values helps in better reasoning about the findings of a study already conducted
+
+-   Ideally, however, it is best to pre-plan the sample size by formalizing the effect sizes BEFORE conducting a study.
+
+-   The motto is TBT:
+
+::: {style="text-align: center;"}
+Thinking Before Testing!
+:::
+
+## Need some help with Critical ES Values?
+
+\ 
+
+::: {style="text-align: center;"}
+Package, examples and draft of the paper on our repository:
+
+[https://github.com/psicostat/criticalESvalue](https://github.com/psicostat/criticalESvalue){preview-link="true" style="text-align: center"}
+:::
+
+
+
+## Take-home message (part II) {.smaller}
+
+-   Statistics is hard.
+-   Statistics applied to Psychology is even harder.
+
+::: {style="text-align: left; margin-left: 2em; margin-top: -.5em"}
+... how to theoretically define and interpret effect size?
+
+... how to calculate appropriate critical effect size values for complex models?
+
+:::
+
+
+-   The suggested approach is COLLABORATION between scientists: psychologists, psychometricians, and statisticians
+
+\
+
+
+
+::: {style="text-align: center;"}
+A small (modesT) example: Psicostat
+
+[http://psicostat.dpss.psy.unipd.it](http://psicostat.dpss.psy.unipd.it){preview-link="true" style="text-align: center"}
+:::
+
+<img src="img/logo_psicostat.png" style="width: 70px; float: right;"/>
+
+
+##  {background-color="#d9d2e9"}
+
+![](img/tyou.png)
+
+[**Stay tuned ;)**]{style="color:purple;"}
+
+<!-- ## References {background-color="#d9d2e9"} -->
+
+<!-- ::: {#refs} -->
+<!-- ::: -->
