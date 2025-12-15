@@ -14,7 +14,7 @@ format:
 
 ### Slides:
 
--   [PMGS slides](Presentazioni/PMGS_2025/PMGS_2025.html)
--   [AIP 2025](Presentazioni/AIP_2025/Perugini_AIP_2025.html)
--   [PYMS 2025](Presentazioni/PYMS_2025/PYMS_2025.html)
--   [Meta-Rep](Presentazioni/Meta-Rep/Perugini_MetaRep.html)
+-   [PMGS slides](slides/PMGS_2025/PMGS_2025.html)
+-   [AIP 2025](slides/AIP_2025/Perugini_AIP_2025.html)
+-   [PYMS 2025](slides/PYMS_2025/PYMS_2025.html)
+-   [Meta-Rep](slides/Meta-Rep/Perugini_MetaRep.html)
