@@ -1,0 +1,16 @@
+# ---- R / Quarto / RMarkdown ----
+*_cache/
+*_files/
+.quarto/
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# ---- Rendered sites / output ----
+_site/
+docs/
+
+# ---- OS junk ----
+.DS_Store
+Thumbs.db
