@@ -471,13 +471,13 @@ NTAB <- table(ALL$n,ALL$mu,ALL$sigma,ALL$alpha)
 ```
 
 ::: {style="font-size: 95%;"}
--   $\delta$ = (`r PARlist$xi_vec`); mean of the second population; <!-- , which corresponds also to the difference between the two groups, the first one has always $\mu = 0$ -->
--   $\sigma$ = (`r PARlist$omega_vec`); standard deviation of the second population;
+-   $\delta$ = (`r PARlist$mu_vec`); mean of the second population; <!-- , which corresponds also to the difference between the two groups, the first one has always $\mu = 0$ -->
+-   $\sigma$ = (`r PARlist$sigma_vec`); standard deviation of the second population;
 -   $\alpha$ = (`r PARlist$alpha_vec`); degree of asymmetry (skewness) of the second population;
 -   $n$ = (`r PARlist$n_vec`); sample size, equal in the two samples.
 :::
 
-For each of the `r length(PARlist$xi_vec)` $\times$ `r length(PARlist$omega_vec)` $\times$ `r length(PARlist$alpha_vec)` $\times$ `r length(PARlist$n_vec)` $= 180$ conditions we generated `r NTAB[1,1,1,1]` sets of data on which we performed the analysis.
+For each of the `r length(PARlist$mu_vec)` $\times$ `r length(PARlist$sigma_vec)` $\times$ `r length(PARlist$alpha_vec)` $\times$ `r length(PARlist$n_vec)` $= 180$ conditions we generated `r NTAB[1,1,1,1]` sets of data on which we performed the analysis.
 
 
 ## Statistical tests for comparison
