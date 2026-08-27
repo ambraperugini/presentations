@@ -1,0 +1,14 @@
+---
+title: "Being FAIR: Advancing Scientific Practice in Experimental Psychology"
+author:
+  - Ambra Perugini
+format: pdf
+---
+
+
+Abstract:
+
+FAIR (Findable, Accessible, Interoperable, Reusable), is not only a nice word, but a set of principles guiding researchers and technicians in managing and sharing data, alongside the emerging role of data stewards. Findable refers to making data and metadata identifiable through persistent identifiers and rich descriptions. Accessible means that data can be retrieved through standardized protocols, typically via trusted repositories, even when access is restricted. Interoperable requires the use of shared formats, vocabularies, and machine-readable standards to enable integration across systems. Reusable ensures that data are well-documented, accompanied by clear usage licenses, and described with sufficient detail to support future use.
+These principles extend beyond academia and are increasingly relevant across multiple domains. Researchers’ responsibilities go beyond ensuring transparency and methodological rigor: they must also promote accessibility and reusability to maximize the impact and value of their work. FAIR principles apply not only to datasets but also to software, making them central to Open Science practices.
+In this contribution, I will introduce the four FAIR principles and discuss their relevance for experimental psychology, followed by a brief overview of practical tools supporting their implementation in everyday research workflows.
+
