@@ -9,6 +9,8 @@ format:
     self-contained-math: true
 bibliography: aip.bib
 csl: apa.csl
+logo: logo_psicostat.png
+footer: "AIP Sperimentale 2026 - Venezia"
 ---
 
 ## OPEN SCIENCE $\neq$ FAIR PRINCIPLES
