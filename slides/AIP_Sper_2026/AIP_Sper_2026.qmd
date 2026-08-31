@@ -24,9 +24,10 @@ csl: apa.csl
 
 - A set of guiding principles
 - Applicable across disciplines
-- Aiming at **machine-readability** and referring to **data stewardship**
+- Aiming at human and **machine-readability** 
+- Guiding **data stewardship**
 
-- Later declined into FAIR for Research Software [@barker2022introducing]
+- Also declined into FAIR for Research Software [@barker2022introducing]
 
 
 
@@ -77,7 +78,7 @@ csl: apa.csl
 
 **Example in practice:**
 
-- Add a Creative Commons license
+- Add a permissive license (i.e. MIT, Apache 2.0)
 - Include documentation, codebooks, analysis scripts
 
 
@@ -106,7 +107,7 @@ csl: apa.csl
 
 - [Zenodo](https://zenodo.org/)
 
-- [Overview of Permissive Licenses](https://choosealicense.com)
+- [Choose a License](https://choosealicense.com)
 
 
 # Thank you!
@@ -114,5 +115,19 @@ csl: apa.csl
 
 
 _Ambra Perugini_
+
+::::{.columns}
+:::{.column width="70%"}
+
+\
+
+
+QR-CODE of the Presentation:
+:::
+:::{.column width="30%"}
+![](qr-code.png)
+:::
+::::
+
 
 ## References
