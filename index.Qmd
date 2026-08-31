@@ -18,3 +18,4 @@ format:
 -   [AIP 2025](slides/AIP_2025/Perugini_AIP_2025.html)
 -   [PYMS 2025](slides/PYMS_2025/PYMS_2025.html)
 -   [Meta-Rep](slides/Meta-Rep/Perugini_MetaRep.html)
+-   [AIP 2026](slides/AIP_Sper_2026/AIP_Sper_2026.html)
