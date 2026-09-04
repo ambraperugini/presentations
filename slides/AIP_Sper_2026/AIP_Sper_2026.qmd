@@ -107,12 +107,12 @@ include-in-header:
 - Improves **reproducibility** and **transparency**
 - Facilitates **collaboration**
 - Encourages **better documentation** and data curation
-- Needed attention for pryvacy privacy of data-storage platforms
+- Needed attention for privacy of data-storage platforms
 
 
 # First steps to become more FAIR
 
-- Follow data management plans from the start
+- Follow data management plans (DMPs) from the start
 
 - Use data repositories (e.g., Zenodo, Dataverse)
 
@@ -130,9 +130,9 @@ include-in-header:
 
 - [Choose a License](https://choosealicense.com)
 
-- [Data management plan templates](https://dmponline.rivm.nl/public_templates)
+- [DMPs templates](https://dmponline.rivm.nl/public_templates)
 
-- [Data Management plan guidelines](https://zenodo.org/records/4915862)
+- [DMPs guidelines](https://zenodo.org/records/4915862)
 
 # Thank you!
 
