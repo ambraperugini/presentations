@@ -74,7 +74,7 @@ include-in-header:
 **Example in practice:**
 
 - Publish metadata openly even if data is sensitive (e.g., clinical trials)
-- Use data repositories (e.g., OSF, Zenodo)
+- Use data repositories (i.e. Zenodo)
 
 
 # Interoperable
@@ -104,14 +104,17 @@ include-in-header:
 
 # FAIR in Psychology 
 
-- Improves **replicability** and **meta-analyses**
+- Improves **reproducibility** and **transparency**
 - Facilitates **collaboration**
 - Encourages **better documentation** and data curation
+- Needed attention for pryvacy privacy of data-storage platforms
 
 
 # First steps to become more FAIR
 
-- Use data repositories (e.g., OSF, Dataverse)
+- Follow data management plans from the start
+
+- Use data repositories (e.g., Zenodo, Dataverse)
 
 - Adopt metadata standards (e.g., DDI, Dublin Core)
 
@@ -123,12 +126,13 @@ include-in-header:
 
 - [FAIRshare](https://fairdataihub.org/fairshare) [@patel2023making]
 
-- [Open Science Framework](https://osf.io/)
-
 - [Zenodo](https://zenodo.org/)
 
 - [Choose a License](https://choosealicense.com)
 
+- [Data management plan templates](https://dmponline.rivm.nl/public_templates)
+
+- [Data Management plan guidelines](https://zenodo.org/records/4915862)
 
 # Thank you!
 
