@@ -59,31 +59,37 @@ library(ggplot2)
 library(dplyr)
 library(psych)
 
-set.seed(16052026)
+set.seed(13)
 
 ```
 
 ## The Problem 
 
+::: {style="font-size: .9em;"}
+
 Data in psychology:
 
-- are often skewed
+- is often not normally distributed
 
-- do not respect normality assumptions 
+- does not respect parametric tests assumptions (i.e. t-test)
 
-- estimates are computed on small samples
-
-::: {style="font-size: .7em;"}
-
-Traditional tests such as the t-test and the anova are focused on means, but differences might arise in other parameters, such as skewness and kurtosis.
-
-The overlapping index calculates the area of overlap between densities of the data and the overlapping test is based on permutation, therefore assumptions free.
-
-The case in example applies the overlapping index on environmental data.
+- is made of small samples
 
 :::
 
-## An extreme example
+::: {style="font-size: .8em;"}
+
+Therefore:
+
+- differences beyond mean are overlooked
+
+- higher chances of type I and type II errors
+
+- studies are under-powered 
+
+:::
+
+## An extreme example {.smaller}
 
 
 ```{r esempio1, warning=FALSE,message=FALSE, cache=TRUE}
@@ -95,17 +101,21 @@ n <- 30
 x <- rnorm(n, normPars[1], normPars[2])
 y <- runif(n, unifPars[1], unifPars[2])
 
+m_x <- mean(x)
+m_y <- mean(y)
+
 LIST<-list(x,y)
 
 Y <- stack( data.frame(y1=x,y2=y) )
 
 ```
 
+$n = 30$ x group, $m_{y1}=10.03$ and $m_{y2}=9.86$
+
 :::: {.columns}
 
 ::: {.column width="50%"}
 
-\
 
 ```{r bar_plot}
 #| fig-width: 6
@@ -145,7 +155,61 @@ ggplot(summary_data, aes(x = ind, y = mean_value, fill = ind)) +
 
 ::: {.column width="50%"}
 
-\
+
+
+:::
+
+::::
+
+## An extreme example {.smaller}
+
+
+
+$n = 30$ x group, $m_{y1}=10.03$ and $m_{y2}=9.86$
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+
+```{r bar_plot_2}
+#| fig-width: 6
+#| fig-height: 5
+
+# Compute mean and standard error
+summary_data <- Y %>%
+  group_by(ind) %>%
+  summarise(
+    mean_value = mean(values),
+    se = sd(values) / sqrt(n())
+  )
+
+# Plot bar graph with error bars
+ggplot(summary_data, aes(x = ind, y = mean_value, fill = ind)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.6) +
+  geom_errorbar(
+    aes(ymin = mean_value - se, ymax = mean_value + se),
+    width = 0.2,
+    position = position_dodge(0.6)
+  ) +
+  labs(
+    x = "Groups",
+    y = "Variable of interest"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("pink", "violet")) +
+  guides(fill = "none") +
+  theme(
+    axis.text = element_text(size = 14),  
+    axis.title = element_text(size = 20),  
+   )
+
+```
+
+:::
+
+::: {.column width="50%"}
+
 
 ```{r equalmean}
 #| fig-width: 6
@@ -171,62 +235,78 @@ theme_set(theme_bw())
 ::::
 
 
+## Possible solutions
+
+- Use descriptive statistics
+
+- Test hypothesis only if appropriate
+
+- Use statistics that respect the nature of the data (i.e. non-parametric tests)
+
+![](img/solutions.png){fig-align="center"}
+
+\
 
 ## The Overlapping Index 
 
-::: {style="font-size: .9em;"}
+\
+
+::: {style="font-size: 1em;"}
 
 The Overlapping Index ($\eta$) is an index of **effect size** and varies from 0 and 1. 
 
 The Index calculates the area of overlap between two or more **groups/conditions**. 
 
-It is computed on the density distribution of the data and it is normalized to 1 when there is complete overlap and when the distributions do not have points in common, meaning that the groups/conditions are disjoint, $\eta = 0$
+- 0 -- there are no points in common
+
+- 1 -- there is complete overlap 
 
 :::
 
 
 ## Permutation test
 
-::: {style="font-size: .8em;"}
+::: {style="font-size: .9em;"}
 
-Usually $H_0$ is defined as the absence of an effect.
+- Usually $H_0 = 0$ and $H_1 \neq 0$
 
-For simplicity, instead of working with $\eta$ now we will work with the complement $\zeta$, defined as $1 - \eta = \zeta$ and define $H_0 : \zeta = 0$ meaning that there is no difference between the densities of the two populations.
+- The Overlapping Test is defined as $1 - \eta = \zeta$ 
 
-The permitation test:
+- So $H_0 : \zeta = 0$ (no difference between groups)
 
--   Rearranges the data $B$ times
+
+The permutation test:
+
+-   Shuffles the data $B$ times
 -   Calculates the statistic for each new dataset of permuted data
 -   Calculates $p$- value as the probability of obtaining equal or more extreme values
-
-
-```{=tex}
-\begin{eqnarray*}
-p = \frac{(\# \hat{\zeta}_b \geq \hat{\zeta})+1 }{B+1}
-\end{eqnarray*}
-```
 
 :::
 
 # Application on real data
 
-## The study {.smaller}
+## The study 
 
-AIM -- Compare Outdoor and Indoor teachers on:
+::: {style="font-size: .85em;"}
 
-- Affective qualities of school places (School organizational climate - R-SLEQ)
+**AIM** -- Compare Outdoor and Indoor teachers on:
+
+- Affective qualities of school places (Revised School-Level Environment Questionnaire - R-SLEQ)
+
+- Psychological distress (Depression Anxiety Stress Scale - DASS-21)
 
 - Life satisfaction (Satisfaction with life - SWLS)
 
-- Psychological distress (Psychological distress - DASS-21)
 
-Hypothesis -- Outdoor teachers report:
+**Hypothesis** -- Outdoor teachers report:
 
 - More favorable organizational climate (R-SLEQ)
 
+- No differences in psychological distress (DASS-21)
+
 - No differences in life satisfaction (SWLS)
 
-- No differences in psychological distress (DASS-21)
+:::
 
 ## Sample characteristics
 
@@ -250,10 +330,36 @@ n_DASStot_out <- sum(!is.na(Dati_insegnanti$DASSTot[Dati_insegnanti$OutIn == 2])
 
 
 - 136 Italian teachers (96.3\% women), mean age = 45.16 years ($SD = 10.64$, range $24-64$)
-- 66.9\% primary, 31.6\% kindergarten, 1.5\% lower secondary school
+
 - Outdoor teachers: n = `r n_DASStot_out`
+
 - Indoor teachers: n = `r n_DASStot_in`
 
+- 66.9\% primary, 31.6\% kindergarten, 1.5\% lower secondary school
+
+## Analysis workflow
+
+:::: {.columns}
+
+::: {.column width="80%"}
+
+\
+
+1. Data visualization and Descriptive statistics
+
+2. Significance Testing
+
+3. Tailored specific parametric testing
+
+:::
+
+::: {.column width="20%"}
+
+![](img/workflow.png){.absolute bottom="80" right="-210" width="450" height="500"}
+
+:::
+
+::::
 
 # Results R-SLEQ
 
@@ -266,7 +372,6 @@ n_DASStot_out <- sum(!is.na(Dati_insegnanti$DASSTot[Dati_insegnanti$OutIn == 2])
 #| results: hide
 #| warning: false
 
-library(overlapping)
 RSLEQtot_in <- Dati_insegnanti$RSLEQTot[Dati_insegnanti$OutIn == 1]
 RSLEQTtot_out <- Dati_insegnanti$RSLEQTot[Dati_insegnanti$OutIn == 2]
 List_RSLEQ <- list(RSLEQtot_in, RSLEQTtot_out)
@@ -274,9 +379,6 @@ List_RSLEQ <- list(RSLEQtot_in, RSLEQTtot_out)
 ```
 
 ```{r}
-library(ggplot2)
-library(dplyr)
-
 
 RSLEQ_data <- data.frame(
   Score = c(RSLEQtot_in, RSLEQTtot_out),
@@ -349,6 +451,7 @@ knitr::kable(
 #| echo: true
 #| warning: false
 
+library(overlapping)
 overlap(List_RSLEQ, plot = F)
 ```
 
@@ -392,7 +495,7 @@ ggplot(ZPERM_RSLEQ, aes(Zperm_RSLEQ)) +
 
 ## STEP 3:
 
-**Tailored parametric specific testing**
+**Tailored specific parametric testing**
 
 ```{r}
 
@@ -441,9 +544,6 @@ List_DASS <- list(DASStot_in, DASStot_out)
 ```
 
 ```{r}
-library(ggplot2)
-library(dplyr)
-
 
 DASS_data <- data.frame(
   Score = c(DASStot_in, DASStot_out),
@@ -515,6 +615,7 @@ knitr::kable(
 #| echo: true
 #| warning: false
 
+library(overlapping)
 overlap(List_DASS, plot=F)
 ```
 
@@ -558,7 +659,7 @@ ggplot(DASS_ZPERM, aes(DASS_Zperm)) +
 
 ## STEP 3:
 
-**Tailored parametric specific testing**
+**Tailored specific parametric testing**
 
 ```{r}
 model_DASSTot <- aov(DASSTot ~ OutIn, data = Dati_insegnanti)
@@ -599,7 +700,6 @@ ggplot(data.frame(Res_DASSTot = Res_DASSTot), aes(sample = Res_DASSTot)) +
 #| results: hide
 #| warning: false
 
-library(overlapping)
 SWLS_in <- Dati_insegnanti$SWLS[Dati_insegnanti$OutIn == 1]
 SWLS_out <- Dati_insegnanti$SWLS[Dati_insegnanti$OutIn == 2]
 List_SWLS <- list(SWLS_in, SWLS_out)
@@ -679,6 +779,7 @@ knitr::kable(
 #| echo: true
 #| warning: false
 
+library(overlapping)
 overlap(List_SWLS, plot=F)
 
 ```
@@ -722,7 +823,7 @@ ggplot(SWLS_ZPERM, aes(SWLS_Zperm)) +
 
 ## STEP 3:
 
-**Tailored parametric specific testing**
+**Tailored specific parametric testing**
 
 ```{r}
 
@@ -735,9 +836,6 @@ One Way Anova: $F(1, 134) = 0.09$, $p = 0.76$
 **Assumption of Normality Check**
 
 ```{r ttestSWLS}
-
-
-
 
 Res_SWLS <- model_SWLS$residuals
 
@@ -761,11 +859,9 @@ ggplot(data.frame(Res_SWLS = Res_SWLS), aes(sample = Res_SWLS)) +
 
 ## To Conclude
 
-- No detectable difference in Life satisfaction 
-
-- No detectable difference in Psychological Distress
-
 - Outdoor teachers reported more positive affective qualities of school places
+
+- No differences were detected for Psychological Distress and Life Satisfaction
 
 ![](img/green.jpeg){.absolute bottom="20" right="230" }
 
@@ -775,11 +871,13 @@ ggplot(data.frame(Res_SWLS = Res_SWLS), aes(sample = Res_SWLS)) +
 
 ::: {.column width="65%"}
 
--   Be aware of parametric tests assumptions
-
 -   Always plot your data BEFORE running the analysis
 
+-   Be aware of parametric tests assumptions
+
 -   Thinking Before Testing (cit. Richard McElreath )
+
+-   Collaboration is key
 
 ::: 
 
@@ -801,17 +899,3 @@ Here you can find our manuscript, on the implementation of the permutation test 
 
 ![](img/qr-code.png){.absolute bottom="20" right="365" width="350" height="350"}
 
-## The Overlapping Index {visibility="uncounted"}
-
-::: {style="font-size: 1em;"}
-
-The Overlapping Index ($\eta$) is an index of effect size and varies from 0 and 1, formally defined in the following way:
-
-```{=tex}
-\begin{eqnarray}
-\eta (A,B) = \int_{\mathbb{R}^n} min [f_A (x),f_B (x)] dx
-\end{eqnarray}
-```
-$\eta (A,B)$ is normalized to one and when the distributions of A and B do not have points in common, meaning that $f_A (x)$ and $f_B (x)$ are disjoint, $\eta (A,B) = 0$
-
-:::
