@@ -47,6 +47,7 @@ K-means:
  - Basato sulla distanza eculidea tra osservazioni
  
  - Necessaria ortogonalità tra variabili
+
 :::
 
 ::::

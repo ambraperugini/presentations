@@ -1,0 +1,22 @@
+/*-- scss:defaults --*/
+
+// colors
+$body-bg: #ebe7f4 !default;
+
+/*-- scss:rules --*/
+
+.title {
+  font-size: 100px !important;
+  color: black !important;
+}
+
+.indent {
+  margin-left: 40px;
+}
+
+.reveal .slide-logo {
+  height: 80px !important;
+  width: 70px !important;
+  max-width: unset !important;
+  max-height: unset !important;
+}

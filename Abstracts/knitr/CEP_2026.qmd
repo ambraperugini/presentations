@@ -1,0 +1,22 @@
+---
+title: "Do Outdoor Green Educational Activities Make a Difference for Teachers? A Re-Analysis through Data Visualization and the Overlapping Index"
+author:
+  - Ambra Perugini
+  - Massimiliano Pastore
+  - Oriana Mosca
+  - Emiliane Rubat du Mérac 
+  - Ferdinando Fornara
+format: pdf
+---
+
+
+Abstract:
+
+
+Research in environmental psychology and psychological science more broadly has often focused on mean differences when comparing groups. Although this approach offers an interpretable summary of group differences, it may overlook other relevant features of the data, including distributional shape and the extent to which observations from different groups overlap. Data visualization and complementary statistical indices can help address these limitations, providing a more comprehensive picture of empirical findings.
+
+This study aims to demonstrate the value of data visualization and the application of the Overlapping Index to a research question in environmental psychology: whether teachers' perceptions of school environments differ between those who frequently conduct educational activities in green outdoor settings and those who work predominantly indoors.
+
+In the present contribution we reanalyse questionnaire data from a study of kindergarten and primary school teachers (n = 209, 51.20\% doing outdoor activities). The analyses focus on perceived affective qualities of the school environment and perceived restorativeness. For each outcome, data visualization is used to explore distributional characteristics, while the Overlapping Index quantifies the degree of overlap between the empirical distributions of the two groups, complementing conventional group comparisons.
+
+The results quantify distributional overlap across outcomes and illustrate how this information can complement conventional tests of group differences. This application demonstrates the  value of combining data visualization with non-parametric methods in environmental psychology, supporting a more nuanced interpretation of group differences and individual variability.
